@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../dashboard/view/dashboard_page.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 import '../widgets/widgets.dart';
+
+import '../../dashboard/view/dashboard_page.dart';
 import 'login_page.dart';
 
 class SignupPage extends StatefulWidget {
@@ -73,23 +74,43 @@ class _SignupPageState extends State<SignupPage>
     _nameController.dispose();
     _emailController.dispose();
     _entranceController.dispose();
-
     super.dispose();
   }
 
   void _submit() {
     FocusManager.instance.primaryFocus?.unfocus();
 
-    final isFormValid = _formKey.currentState?.validate() ?? false;
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
 
-    if (!isFormValid) {
-      context.read<AuthBloc>().add(EmailChanged(_emailController.text));
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text('Please enter your name.'),
+          ),
+        );
 
       return;
     }
 
-    context.read<AuthBloc>().add(SignupSubmitted(_nameController.text.trim()));
+    final valid = _formKey.currentState?.validate() ?? false;
+
+    if (!valid) {
+      context.read<AuthBloc>().add(EmailChanged(email));
+
+      return;
+    }
+
+    context.read<AuthBloc>().add(NameChanged(name));
+
+    context.read<AuthBloc>().add(EmailChanged(email));
+
+    context.read<AuthBloc>().add(SignupSubmitted(name: name));
   }
+
 
   Widget _animatedSection({
     required Animation<double> animation,
@@ -108,38 +129,33 @@ class _SignupPageState extends State<SignupPage>
     );
   }
 
+
   Route<void> _loginRoute() {
     return PageRouteBuilder<void>(
       transitionDuration: const Duration(milliseconds: 350),
-      reverseTransitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (context, animation, secondaryAnimation) {
         return const LoginPage();
       },
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        final curvedAnimation = CurvedAnimation(
+        final curved = CurvedAnimation(
           parent: animation,
           curve: Curves.easeOutCubic,
         );
 
         return FadeTransition(
-          opacity: curvedAnimation,
+          opacity: curved,
           child: SlideTransition(
             position: Tween<Offset>(
               begin: const Offset(-0.08, 0),
               end: Offset.zero,
-            ).animate(curvedAnimation),
-            child: ScaleTransition(
-              scale: Tween<double>(
-                begin: 0.98,
-                end: 1,
-              ).animate(curvedAnimation),
-              child: child,
-            ),
+            ).animate(curved),
+            child: child,
           ),
         );
       },
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -148,7 +164,8 @@ class _SignupPageState extends State<SignupPage>
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        if (state.status == AuthStatus.success) {
+        // SIGNUP SUCCESS
+        if (state.status == AuthStatus.success && state.user != null) {
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => const DashboardPage()),
             (route) => false,
@@ -162,23 +179,8 @@ class _SignupPageState extends State<SignupPage>
               SnackBar(
                 behavior: SnackBarBehavior.floating,
                 backgroundColor: colorScheme.error,
-                margin: const EdgeInsets.all(16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                content: Row(
-                  children: [
-                    const Icon(
-                      Icons.error_outline_rounded,
-                      color: Colors.white,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        state.errorMessage ?? 'Unable to create your account.',
-                      ),
-                    ),
-                  ],
+                content: Text(
+                  state.errorMessage ?? 'Unable to create your account.',
                 ),
               ),
             );
@@ -209,10 +211,6 @@ class _SignupPageState extends State<SignupPage>
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // ------------------------------------------------
-                            // ILLUSTRATION
-                            // ------------------------------------------------
-
                             _animatedSection(
                               animation: _illustrationAnimation,
                               child: const AuthIllustration(),
@@ -220,9 +218,6 @@ class _SignupPageState extends State<SignupPage>
 
                             const SizedBox(height: 18),
 
-                            // ------------------------------------------------
-                            // HEADING
-                            // ------------------------------------------------
                             _animatedSection(
                               animation: _headingAnimation,
                               child: Column(
@@ -244,70 +239,57 @@ class _SignupPageState extends State<SignupPage>
 
                             const SizedBox(height: 30),
 
-                            // ------------------------------------------------
-                            // NAME + EMAIL
-                            // ------------------------------------------------
                             _animatedSection(
                               animation: _fieldAnimation,
-                              child: Column(
-                                children: [
-                                  // NAME
-                                  TextFormField(
+                              child: BlocBuilder<AuthBloc, AuthState>(
+                                builder: (context, state) {
+                                  final name = _nameController.text.trim();
+
+                                  return NameField(
                                     controller: _nameController,
-                                    keyboardType: TextInputType.name,
-                                    textCapitalization:
-                                        TextCapitalization.words,
-                                    textInputAction: TextInputAction.next,
-                                    decoration: const InputDecoration(
-                                      hintText: 'Full name',
-                                      prefixIcon: Icon(
-                                        Icons.person_outline_rounded,
-                                      ),
-                                    ),
-                                    validator: (value) {
-                                      final name = value?.trim() ?? '';
-
-                                      if (name.isEmpty) {
-                                        return 'Please enter your name';
-                                      }
-
-                                      if (name.length < 2) {
-                                        return 'Name must be at least 2 characters';
-                                      }
-
-                                      return null;
-                                    },
-                                  ),
-
-                                  const SizedBox(height: 16),
-
-                                  // EMAIL
-                                  BlocBuilder<AuthBloc, AuthState>(
-                                    builder: (context, state) {
-                                      return EmailField(
-                                        controller: _emailController,
-                                        isValid: state.isEmailValid,
-                                        hasError: state.hasError,
-                                        errorText: state.errorMessage,
-                                        onChanged: (email) {
-                                          context.read<AuthBloc>().add(
-                                            EmailChanged(email),
-                                          );
-                                        },
-                                        onSubmitted: () => _submit()
-                                        ,
+                                    isValid: name.length >= 2,
+                                    hasError: state.hasError && name.isEmpty,
+                                    errorText: name.isEmpty
+                                        ? state.errorMessage
+                                        : null,
+                                    onChanged: (name) {
+                                      context.read<AuthBloc>().add(
+                                        NameChanged(name),
                                       );
                                     },
-                                  ),
-                                ],
+                                    onSubmitted: () {
+                                      FocusScope.of(context).nextFocus();
+                                    },
+                                  );
+                                },
                               ),
                             ),
 
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 16),
 
-                            // ------------------------------------------------
-                            // CREATE ACCOUNT BUTTON
-                            // ------------------------------------------------
+                            _animatedSection(
+                              animation: _fieldAnimation,
+                              child: BlocBuilder<AuthBloc, AuthState>(
+                                builder: (context, state) {
+                                  return EmailField(
+                                    controller: _emailController,
+                                    isValid: state.isEmailValid,
+                                    hasError: state.hasError,
+                                    errorText: state.errorMessage,
+                                    onChanged: (email) {
+                                      context.read<AuthBloc>().add(
+                                        EmailChanged(email),
+                                      );
+                                    },
+                                    onSubmitted: _submit,
+                                  );
+                                },
+                              ),
+                            ),
+
+                            const SizedBox(height: 18),
+
+                            // BUTTON
                             _animatedSection(
                               animation: _buttonAnimation,
                               child: BlocBuilder<AuthBloc, AuthState>(
@@ -324,9 +306,7 @@ class _SignupPageState extends State<SignupPage>
 
                             const SizedBox(height: 30),
 
-                            // ------------------------------------------------
                             // LOGIN
-                            // ------------------------------------------------
                             _animatedSection(
                               animation: _bottomAnimation,
                               child: Row(
@@ -338,18 +318,9 @@ class _SignupPageState extends State<SignupPage>
                                   ),
                                   TextButton(
                                     onPressed: () {
-                                      FocusManager.instance.primaryFocus
-                                          ?.unfocus();
-
                                       Navigator.of(context)
                                           .pushReplacement(_loginRoute());
                                     },
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: colorScheme.primary,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                      ),
-                                    ),
                                     child: const Text(
                                       'Log in',
                                       style: TextStyle(
@@ -365,12 +336,7 @@ class _SignupPageState extends State<SignupPage>
 
                             Text(
                               'Employee Attendance Management',
-                              textAlign: TextAlign.center,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant.withValues(
-                                  alpha: 0.65,
-                                ),
-                              ),
+                              style: theme.textTheme.bodySmall,
                             ),
                           ],
                         ),

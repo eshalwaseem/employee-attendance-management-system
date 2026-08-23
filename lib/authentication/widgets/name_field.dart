@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class EmailField extends StatefulWidget {
+class NameField extends StatefulWidget {
   final TextEditingController controller;
   final ValueChanged<String>? onChanged;
   final bool isValid;
@@ -8,7 +8,7 @@ class EmailField extends StatefulWidget {
   final String? errorText;
   final VoidCallback? onSubmitted;
 
-  const EmailField({
+  const NameField({
     super.key,
     required this.controller,
     this.onChanged,
@@ -19,10 +19,10 @@ class EmailField extends StatefulWidget {
   });
 
   @override
-  State<EmailField> createState() => _EmailFieldState();
+  State<NameField> createState() => _NameFieldState();
 }
 
-class _EmailFieldState extends State<EmailField> {
+class _NameFieldState extends State<NameField> {
   late final FocusNode _focusNode;
 
   @override
@@ -42,17 +42,15 @@ class _EmailFieldState extends State<EmailField> {
     super.dispose();
   }
 
-  String? _validateEmail(String? value) {
-    final email = value?.trim() ?? '';
+  String? _validateName(String? value) {
+    final name = value?.trim() ?? '';
 
-    if (email.isEmpty) {
-      return 'Email address is required.';
+    if (name.isEmpty) {
+      return 'Name is required.';
     }
 
-    final isValid = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
-
-    if (!isValid) {
-      return 'Please enter a valid email address.';
+    if (name.length < 2) {
+      return 'Please enter your full name.';
     }
 
     return null;
@@ -65,14 +63,14 @@ class _EmailFieldState extends State<EmailField> {
     final borderColor = widget.hasError
         ? colorScheme.error
         : _focusNode.hasFocus
-        ? colorScheme.primary
-        : Colors.transparent;
+            ? colorScheme.primary
+            : Colors.transparent;
 
     final shadowColor = widget.hasError
         ? colorScheme.error.withValues(alpha: 0.10)
         : _focusNode.hasFocus
-        ? colorScheme.primary.withValues(alpha: 0.12)
-        : Colors.transparent;
+            ? colorScheme.primary.withValues(alpha: 0.12)
+            : Colors.transparent;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
@@ -97,12 +95,13 @@ class _EmailFieldState extends State<EmailField> {
         child: TextFormField(
           controller: widget.controller,
           focusNode: _focusNode,
-          keyboardType: TextInputType.emailAddress,
-          textInputAction: TextInputAction.done,
+          keyboardType: TextInputType.name,
+          textInputAction: TextInputAction.next,
+          textCapitalization: TextCapitalization.words,
           autocorrect: false,
-          enableSuggestions: false,
+          enableSuggestions: true,
           autovalidateMode: AutovalidateMode.onUserInteraction,
-          validator: _validateEmail,
+          validator: _validateName,
           onChanged: widget.onChanged,
           onFieldSubmitted: (_) {
             widget.onSubmitted?.call();
@@ -114,24 +113,32 @@ class _EmailFieldState extends State<EmailField> {
           ),
           decoration: InputDecoration(
             filled: false,
-            hintText: 'Email address',
+            hintText: 'Full name',
+        
             prefixIcon: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.only(left: 16),
               child: Icon(
-                Icons.mail_outline_rounded,
+                Icons.person_outline_rounded,
                 color: _focusNode.hasFocus
                     ? colorScheme.primary
                     : colorScheme.onSurfaceVariant,
               ),
             ),
-            prefixIconConstraints: const BoxConstraints(minWidth: 54),
+        
+            prefixIconConstraints: const BoxConstraints(
+              minWidth: 54,
+            ),
+        
             suffixIcon: AnimatedSwitcher(
               duration: const Duration(milliseconds: 220),
               transitionBuilder: (child, animation) {
                 return ScaleTransition(
                   scale: animation,
-                  child: FadeTransition(opacity: animation, child: child),
+                  child: FadeTransition(
+                    opacity: animation,
+                    child: child,
+                  ),
                 );
               },
               child: widget.isValid
@@ -141,19 +148,26 @@ class _EmailFieldState extends State<EmailField> {
                       color: colorScheme.tertiary,
                     )
                   : widget.hasError
-                  ? Icon(
-                      Icons.error_outline_rounded,
-                      key: const ValueKey('error'),
-                      color: colorScheme.error,
-                    )
-                  : const SizedBox(key: ValueKey('empty')),
+                      ? Icon(
+                          Icons.error_outline_rounded,
+                          key: const ValueKey('error'),
+                          color: colorScheme.error,
+                        )
+                      : const SizedBox(
+                          key: ValueKey('empty'),
+                        ),
             ),
-            suffixIconConstraints: const BoxConstraints(minWidth: 54),
+        
+            suffixIconConstraints: const BoxConstraints(
+              minWidth: 54,
+            ),
+        
             border: InputBorder.none,
             enabledBorder: InputBorder.none,
             focusedBorder: InputBorder.none,
             errorBorder: InputBorder.none,
             focusedErrorBorder: InputBorder.none,
+        
             errorStyle: TextStyle(
               color: colorScheme.error,
               fontSize: 12,

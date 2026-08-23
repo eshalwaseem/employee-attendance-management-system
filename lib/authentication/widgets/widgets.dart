@@ -1,5 +1,6 @@
 export 'auth_button.dart';
 export 'email_field.dart';
+export 'name_field.dart';
 
 import 'dart:math' as math;
 

@@ -1,6 +1,14 @@
 import '../models/user.dart';
 
-enum AuthStatus { initial, invalid, valid, loading, success, failure }
+enum AuthStatus {
+  initial,
+  invalid,
+  valid,
+  loading,
+  success,
+  authenticated,
+  failure,
+}
 
 class AuthState {
   final String name;
@@ -17,14 +25,25 @@ class AuthState {
     this.user,
   });
 
-  bool get isEmailValid => status == AuthStatus.valid;
+  bool get isEmailValid =>
+      status == AuthStatus.valid ||
+      status == AuthStatus.loading ||
+      status == AuthStatus.success ||
+      status == AuthStatus.authenticated;
 
-  bool get isLoading => status == AuthStatus.loading;
+  bool get isLoading =>
+      status == AuthStatus.loading;
 
-  bool get isSuccess => status == AuthStatus.success;
+  bool get isSuccess =>
+      status == AuthStatus.success;
+
+  bool get isAuthenticated =>
+      status == AuthStatus.authenticated ||
+      status == AuthStatus.success;
 
   bool get hasError =>
-      status == AuthStatus.invalid || status == AuthStatus.failure;
+      status == AuthStatus.invalid ||
+      status == AuthStatus.failure;
 
   AuthState copyWith({
     String? name,
@@ -33,13 +52,18 @@ class AuthState {
     String? errorMessage,
     User? user,
     bool clearError = false,
+    bool clearUser = false,
   }) {
     return AuthState(
       name: name ?? this.name,
       email: email ?? this.email,
       status: status ?? this.status,
-      errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
-      user: user ?? this.user,
+      errorMessage: clearError
+          ? null
+          : errorMessage ?? this.errorMessage,
+      user: clearUser
+          ? null
+          : user ?? this.user,
     );
   }
 
