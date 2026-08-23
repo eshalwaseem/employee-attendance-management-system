@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../app.dart';
 
 class SwipeCheckButton extends StatefulWidget {
-  final VoidCallback onCheckIn;
+  final VoidCallback? onCheckIn;
   final bool isCheckedIn;
 
   const SwipeCheckButton({
@@ -32,10 +32,7 @@ class _SwipeCheckButtonState extends State<SwipeCheckButton> {
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.check_circle_rounded,
-              color: AppColors.primary,
-            ),
+            Icon(Icons.check_circle_rounded, color: AppColors.primary),
             SizedBox(width: 8),
             Text(
               'Checked In',
@@ -54,8 +51,7 @@ class _SwipeCheckButtonState extends State<SwipeCheckButton> {
       builder: (context, constraints) {
         const double buttonSize = 50;
 
-        final maxPosition =
-            constraints.maxWidth - buttonSize - 8;
+        final maxPosition = constraints.maxWidth - buttonSize - 8;
 
         return Container(
           height: 62,
@@ -95,15 +91,17 @@ class _SwipeCheckButtonState extends State<SwipeCheckButton> {
                       }
                     });
                   },
+
                   onHorizontalDragEnd: (_) {
                     if (_dragPosition >= maxPosition * 0.8) {
-                      widget.onCheckIn();
+                      widget.onCheckIn?.call();
                     } else {
                       setState(() {
                         _dragPosition = 0;
                       });
                     }
                   },
+
                   child: Container(
                     height: buttonSize,
                     width: buttonSize,
