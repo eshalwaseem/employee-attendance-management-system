@@ -90,7 +90,7 @@ class _SplashPageState extends State<SplashPage>
                 ),
                 child: const Center(
                   child: Icon(
-                    Icons.account_balance_rounded,
+                    Icons.how_to_reg_rounded,
                     color: AppColors.primary,
                     size: 52,
                   ),

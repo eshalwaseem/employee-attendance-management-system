@@ -1,4 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'attendance/bloc/attendance_bloc.dart';
+import 'attendance/repository/local_attendance_repository.dart';
+import 'authentication/bloc/auth_bloc.dart';
+import 'authentication/repository/local_auth_repository.dart';
+
+import 'employees/bloc/employee_bloc.dart';
+import 'employees/bloc/employee_event.dart';
 
 import 'splash/view/view.dart';
 
@@ -95,18 +103,6 @@ class AppTheme {
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
       ),
-
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          elevation: 0,
-          minimumSize: const Size.fromHeight(56),
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -116,11 +112,27 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Employee Attendance',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      home: const SplashPage(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<AuthBloc>(
+          create: (_) => AuthBloc(repository: LocalAuthRepository()),
+        ),
+
+        BlocProvider<EmployeeBloc>(
+          create: (_) => EmployeeBloc()..add(const EmployeesLoaded()),
+        ),
+
+        BlocProvider<AttendanceBloc>(
+          create: (_) =>
+              AttendanceBloc(repository: LocalAttendanceRepository()),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'Employee Attendance',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light,
+        home: const SplashPage(),
+      ),
     );
   }
 }
