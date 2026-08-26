@@ -65,19 +65,7 @@ class _ProfilePageState extends State<ProfilePage> {
       return;
     }
 
-    /*
-     * IMPORTANT:
-     * Put your existing "change name/update profile"
-     * AuthEvent here.
-     *
-     * Example:
-     *
-     * context.read<AuthBloc>().add(
-     *   AuthNameUpdateRequested(name),
-     * );
-     *
-     * Use the exact event name from your AuthEvent file.
-     */
+    
 
     setState(() {
       _isEditing = false;
@@ -174,9 +162,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // =====================================================
-                    // HEADER
-                    // =====================================================
+                    
 
                     const Text(
                       'Profile',
@@ -199,9 +185,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                     const SizedBox(height: 30),
 
-                    // =====================================================
-                    // PROFILE IMAGE
-                    // =====================================================
+                   
                     Center(
                       child: Stack(
                         children: [
@@ -242,7 +226,6 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ),
 
-                          // Camera button
                           Positioned(
                             right: 2,
                             bottom: 2,
@@ -270,9 +253,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                     const SizedBox(height: 18),
 
-                    // =====================================================
-                    // NAME
-                    // =====================================================
+               
                     Center(
                       child: Text(
                         name,
@@ -299,9 +280,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                     const SizedBox(height: 32),
 
-                    // =====================================================
-                    // PERSONAL INFORMATION
-                    // =====================================================
+                    
                     const Text(
                       'Personal Information',
                       style: TextStyle(
@@ -425,9 +404,6 @@ class _ProfilePageState extends State<ProfilePage> {
                       const SizedBox(height: 60),
                     
 
-                    // =====================================================
-                    // LOGOUT
-                    // =====================================================
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(

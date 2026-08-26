@@ -124,9 +124,7 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        // ========================================================
-        // AUTH
-        // ========================================================
+       
 
         BlocProvider<AuthBloc>(
           create: (_) =>
@@ -134,39 +132,21 @@ class App extends StatelessWidget {
                 ..add(const AuthSessionRequested()),
         ),
 
-        // ========================================================
-        // EMPLOYEES
-        //
-        // IMPORTANT:
-        // Do NOT load employees here.
-        // Auth must finish first.
-        // ========================================================
+      
         BlocProvider<EmployeeBloc>(
           create: (_) => EmployeeBloc(repository: EmployeeRepository()),
         ),
 
-        // ========================================================
-        // ATTENDANCE
-        //
-        // IMPORTANT:
-        // Do NOT load attendance here.
-        // Auth must finish first.
-        // ========================================================
+        
         BlocProvider<AttendanceBloc>(
           create: (_) => AttendanceBloc(repository: AttendanceRepository()),
         ),
       ],
-
-      // ==========================================================
-      // LISTEN TO AUTH
-      // ==========================================================
       child: BlocListener<AuthBloc, AuthState>(
         listener: (context, authState) {
           final user = authState.user;
 
-          // ------------------------------------------------------
-          // USER IS LOGGED IN
-          // ------------------------------------------------------
+          
 
           if (user != null) {
             print('======================================');
@@ -176,12 +156,9 @@ class App extends StatelessWidget {
             print('Role: ${user.role.value}');
             print('======================================');
 
-            // Now FirebaseAuth.currentUser is available.
-            //
-            // Load employees.
+      
             context.read<EmployeeBloc>().add(const EmployeesLoaded());
 
-            // Load attendance.
             context.read<AttendanceBloc>().add(const AttendanceLoaded());
           }
         },
