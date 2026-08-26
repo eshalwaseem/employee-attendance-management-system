@@ -36,7 +36,6 @@ dependencies:
   flutter_bloc: ^9.1.0
   http: ^1.0.0
   stream_transform: ^2.0.0
-  rive: ^0.13.20
   firebase_core: ^4.13.0
   shared_preferences: ^2.5.5
   firebase_auth: ^6.5.7
