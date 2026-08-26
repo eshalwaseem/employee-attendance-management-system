@@ -14,9 +14,7 @@ class AttendanceRepository {
   CollectionReference<Map<String, dynamic>> get _attendanceCollection =>
       _firestore.collection('attendance');
 
-  // ============================================================
-  // GET ALL RECORDS
-  // ============================================================
+
 
   Future<List<Attendance>> getAllRecords() async {
     final firebaseUser = _auth.currentUser;
@@ -44,25 +42,19 @@ class AttendanceRepository {
 
     Query<Map<String, dynamic>> query;
 
-    // ==========================================================
-    // ADMIN
-    // ==========================================================
+
 
     if (role == 'admin') {
       query = _attendanceCollection;
     }
-    // ==========================================================
-    // MANAGER
-    // ==========================================================
+
     else if (role == 'manager') {
       query = _attendanceCollection.where(
         'managerId',
         isEqualTo: firebaseUser.uid,
       );
     }
-    // ==========================================================
-    // EMPLOYEE
-    // ==========================================================
+  
     else {
       query = _attendanceCollection.where(
         'employeeId',
@@ -70,9 +62,6 @@ class AttendanceRepository {
       );
     }
 
-    // ==========================================================
-    // GET FIRESTORE DATA
-    // ==========================================================
 
     final snapshot = await query.get();
 
@@ -80,18 +69,12 @@ class AttendanceRepository {
         .map((document) => Attendance.fromFirestore(document))
         .toList();
 
-    // ==========================================================
-    // SORT LOCALLY
-    // ==========================================================
 
     records.sort((a, b) => b.date.compareTo(a.date));
 
     return records;
   }
 
-  // ============================================================
-  // GET EMPLOYEE RECORDS
-  // ============================================================
 
   Future<List<Attendance>> getEmployeeRecords(String employeeId) async {
     final records = await getAllRecords();
@@ -99,9 +82,7 @@ class AttendanceRepository {
     return records.where((record) => record.employeeId == employeeId).toList();
   }
 
-  // ============================================================
-  // GET TODAY ATTENDANCE
-  // ============================================================
+
 
   Future<Attendance?> getTodayAttendance(String employeeId) async {
     final records = await getEmployeeRecords(employeeId);
@@ -117,9 +98,6 @@ class AttendanceRepository {
     return null;
   }
 
-  // ============================================================
-  // SAVE ATTENDANCE
-  // ============================================================
 
   Future<void> saveAttendance(Attendance attendance) async {
     final firebaseUser = _auth.currentUser;
@@ -128,7 +106,6 @@ class AttendanceRepository {
       throw Exception('No user is signed in.');
     }
 
-    // Employee can only create their own attendance.
     if (attendance.employeeId != firebaseUser.uid) {
       throw Exception('You can only save your own attendance.');
     }
@@ -138,17 +115,12 @@ class AttendanceRepository {
         .set(attendance.toFirestore());
   }
 
-  // ============================================================
-  // DELETE
-  // ============================================================
-
+ 
   Future<void> deleteAttendance(String attendanceId) async {
     await _attendanceCollection.doc(attendanceId).delete();
   }
 
-  // ============================================================
-  // CLEAR ALL
-  // ============================================================
+
 
   Future<void> clearAll() async {
     final firebaseUser = _auth.currentUser;
@@ -179,9 +151,6 @@ class AttendanceRepository {
     await batch.commit();
   }
 
-  // ============================================================
-  // SAME DAY
-  // ============================================================
 
   bool _isSameDay(DateTime first, DateTime second) {
     return first.year == second.year &&

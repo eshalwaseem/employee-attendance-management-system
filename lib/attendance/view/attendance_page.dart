@@ -167,9 +167,6 @@ class _AttendancePageState extends State<AttendancePage> {
     );
   }
 
-  // ============================================================
-  // TABS
-  // ============================================================
 
   Widget _buildTabs() {
     return Padding(
@@ -234,9 +231,6 @@ class _AttendancePageState extends State<AttendancePage> {
     );
   }
 
-  // ============================================================
-  // MY ATTENDANCE
-  // ============================================================
 
   Widget _buildMyAttendance(Employee employee) {
     return _buildAttendanceContent(
@@ -247,9 +241,6 @@ class _AttendancePageState extends State<AttendancePage> {
     );
   }
 
-  // ============================================================
-  // PEOPLE I CAN VIEW
-  // ============================================================
 
   Widget _buildPeopleYouCanView(
     Employee currentEmployee,
@@ -306,9 +297,6 @@ class _AttendancePageState extends State<AttendancePage> {
     );
   }
 
-  // ============================================================
-  // ATTENDANCE CONTENT
-  // ============================================================
 
   Widget _buildAttendanceContent({
     required List<Employee> employees,
@@ -339,9 +327,7 @@ class _AttendancePageState extends State<AttendancePage> {
               _isInSelectedPeriod(record.date);
         }).toList();
 
-        // ======================================================
-        // MY ATTENDANCE
-        // ======================================================
+
 
         if (!showSearch) {
           final myRecords = filteredRecords;
@@ -381,9 +367,7 @@ class _AttendancePageState extends State<AttendancePage> {
           );
         }
 
-        // ======================================================
-        // PEOPLE / MANAGER / ADMIN VIEW
-        // ======================================================
+      
 
         final groupedRecords = <String, List<Attendance>>{};
 
@@ -456,7 +440,6 @@ class _AttendancePageState extends State<AttendancePage> {
                     );
                   }
 
-                  // WEEK AND MONTH → Keep your existing cards unchanged
                   return EmployeeAttendanceCard(
                     employeeName: employee.name,
                     profileImagePath: employee.profileImagePath,

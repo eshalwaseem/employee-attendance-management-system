@@ -20,10 +20,6 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
     on<AttendanceEmployeeCleared>(_onEmployeeCleared);
   }
 
-  // ============================================================
-  // LOAD ATTENDANCE
-  // ============================================================
-
   Future<void> _onAttendanceLoaded(
     AttendanceLoaded event,
     Emitter<AttendanceState> emit,
@@ -54,10 +50,6 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
     }
   }
 
-  // ============================================================
-  // CHECK IN
-  // ============================================================
-
 Future<void> _onCheckInRequested(
     CheckInRequested event,
     Emitter<AttendanceState> emit,
@@ -68,10 +60,6 @@ Future<void> _onCheckInRequested(
 
     final firebaseUser = _auth.currentUser;
 
-    // ------------------------------------------------------------
-    // USER MUST BE LOGGED IN
-    // ------------------------------------------------------------
-
     if (firebaseUser == null) {
       emit(
         state.copyWith(
@@ -81,10 +69,6 @@ Future<void> _onCheckInRequested(
       );
       return;
     }
-
-    // ------------------------------------------------------------
-    // EMPLOYEE CAN ONLY CHECK THEMSELVES IN
-    // ------------------------------------------------------------
 
     if (event.employeeId != firebaseUser.uid) {
       emit(
@@ -97,10 +81,7 @@ Future<void> _onCheckInRequested(
     }
 
     try {
-      // ----------------------------------------------------------
-      // GET EMPLOYEE PROFILE
-      // ----------------------------------------------------------
-
+   
       final userDocument = await FirebaseFirestore.instance
           .collection('users')
           .doc(firebaseUser.uid)
@@ -122,10 +103,7 @@ Future<void> _onCheckInRequested(
 
       final managerId = userData['managerId'] as String?;
 
-      // ----------------------------------------------------------
-      // EMPLOYEE MUST HAVE A MANAGER
-      // ----------------------------------------------------------
-
+    
       if (role == 'employee' && (managerId == null || managerId.isEmpty)) {
         emit(
           state.copyWith(
@@ -138,18 +116,12 @@ Future<void> _onCheckInRequested(
 
       final now = DateTime.now();
 
-      // ----------------------------------------------------------
-      // CHECK-IN WINDOW
-      // ----------------------------------------------------------
-
+    
       final checkInStart = DateTime(now.year, now.month, now.day, 8, 30);
 
       final checkInEnd = DateTime(now.year, now.month, now.day, 17, 0);
 
-      // ----------------------------------------------------------
-      // BEFORE 8:30 AM
-      // ----------------------------------------------------------
-
+  
       if (now.isBefore(checkInStart)) {
         emit(
           state.copyWith(
@@ -161,10 +133,7 @@ Future<void> _onCheckInRequested(
         return;
       }
 
-      // ----------------------------------------------------------
-      // AFTER 5 PM
-      // ----------------------------------------------------------
-
+    
       if (!now.isBefore(checkInEnd)) {
         emit(
           state.copyWith(
@@ -176,10 +145,7 @@ Future<void> _onCheckInRequested(
         return;
       }
 
-      // ----------------------------------------------------------
-      // PREVENT DUPLICATE CHECK-IN
-      // ----------------------------------------------------------
-
+  
       final alreadyCheckedIn = state.records.any(
         (record) =>
             record.employeeId == firebaseUser.uid &&
@@ -196,10 +162,7 @@ Future<void> _onCheckInRequested(
         return;
       }
 
-      // ----------------------------------------------------------
-      // SAVE TO FIRESTORE
-      // ----------------------------------------------------------
-
+    
       emit(
         state.copyWith(status: AttendanceStatusState.loading, clearError: true),
       );
@@ -237,10 +200,6 @@ Future<void> _onCheckInRequested(
     }
   }
 
-  // ============================================================
-  // DETERMINE ATTENDANCE STATUS
-  // ============================================================
-
   AttendanceStatus _getAttendanceStatus(DateTime checkIn) {
     final lateTime = DateTime(checkIn.year, checkIn.month, checkIn.day, 9, 15);
 
@@ -251,9 +210,6 @@ Future<void> _onCheckInRequested(
     return AttendanceStatus.present;
   }
 
-  // ============================================================
-  // SAME DAY
-  // ============================================================
 
   bool _isSameDay(DateTime first, DateTime second) {
     return first.year == second.year &&
@@ -261,20 +217,13 @@ Future<void> _onCheckInRequested(
         first.day == second.day;
   }
 
-  // ============================================================
-  // EMPLOYEE SELECTION
-  // ============================================================
-
+ 
   void _onEmployeeSelected(
     AttendanceEmployeeSelected event,
     Emitter<AttendanceState> emit,
   ) {
     emit(state.copyWith(selectedEmployeeId: event.employeeId));
   }
-
-  // ============================================================
-  // CLEAR EMPLOYEE SELECTION
-  // ============================================================
 
   void _onEmployeeCleared(
     AttendanceEmployeeCleared event,

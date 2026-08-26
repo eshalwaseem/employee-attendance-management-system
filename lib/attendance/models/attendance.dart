@@ -21,10 +21,7 @@ class Attendance {
     this.isSynced = true,
   });
 
-  // ============================================================
-  // COPY WITH
-  // ============================================================
-
+ 
   Attendance copyWith({
     String? id,
     String? employeeId,
@@ -44,10 +41,6 @@ class Attendance {
       isSynced: isSynced ?? this.isSynced,
     );
   }
-
-  // ============================================================
-  // FROM FIRESTORE
-  // ============================================================
 
   factory Attendance.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> document,
@@ -89,10 +82,6 @@ class Attendance {
     );
   }
 
-  // ============================================================
-  // TO FIRESTORE
-  // ============================================================
-
   Map<String, dynamic> toFirestore() {
     return {
       'employeeId': employeeId,
@@ -104,10 +93,7 @@ class Attendance {
     };
   }
 
-  // ============================================================
-  // TO STRING
-  // ============================================================
-
+ 
   @override
   String toString() {
     return 'Attendance('
