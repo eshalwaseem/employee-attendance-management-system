@@ -13,22 +13,14 @@ class EmployeeRepository {
     return _firestore.collection('users');
   }
 
-  // ============================================================
-  // LOAD EMPLOYEES BASED ON CURRENT USER ROLE
-  // ============================================================
 
   Future<List<Employee>> getEmployees(String currentUserId) async {
-    // Get the currently logged-in user's profile.
     final currentUser = await getEmployee(currentUserId);
 
     if (currentUser == null) {
       throw Exception('Current user profile could not be found.');
     }
 
-    // ==========================================================
-    // ADMIN
-    // ==========================================================
-    // Admin can see everyone.
     if (currentUser.isAdmin) {
       final snapshot = await _usersCollection.get();
 
@@ -37,10 +29,6 @@ class EmployeeRepository {
       }).toList();
     }
 
-    // ==========================================================
-    // MANAGER
-    // ==========================================================
-    // Manager only loads employees assigned to them.
     if (currentUser.isManager) {
       final snapshot = await _usersCollection
           .where('managerId', isEqualTo: currentUserId)
@@ -53,10 +41,6 @@ class EmployeeRepository {
       return [currentUser, ...employees];
     }
 
-    // ==========================================================
-    // EMPLOYEE
-    // ==========================================================
-    // Regular employee only loads themselves.
     final employee = await getEmployee(currentUserId);
 
     if (employee == null) {
@@ -66,9 +50,6 @@ class EmployeeRepository {
     return [employee];
   }
 
-  // ============================================================
-  // LOAD ONE EMPLOYEE
-  // ============================================================
 
   Future<Employee?> getEmployee(String employeeId) async {
     final document = await _usersCollection.doc(employeeId).get();
@@ -85,10 +66,6 @@ class EmployeeRepository {
 
     return Employee.fromMap(id: document.id, data: data);
   }
-
-  // ============================================================
-  // ASSIGN AUTHORITY
-  // ============================================================
 
   Future<Employee> assignAuthority({
     required String employeeId,
@@ -119,9 +96,6 @@ class EmployeeRepository {
     return updatedEmployee;
   }
 
-  // ============================================================
-  // ASSIGN MANAGER
-  // ============================================================
 
   Future<Employee> assignManager({
     required String employeeId,
@@ -155,9 +129,6 @@ class EmployeeRepository {
     return updatedEmployee;
   }
 
-  // ============================================================
-  // REMOVE MANAGER
-  // ============================================================
 
   Future<Employee> removeManager(String employeeId) async {
     await _usersCollection.doc(employeeId).update({
@@ -174,9 +145,6 @@ class EmployeeRepository {
     return updatedEmployee;
   }
 
-  // ============================================================
-  // DELETE FIRESTORE PROFILE
-  // ============================================================
 
   Future<void> deleteEmployeeProfile(String employeeId) async {
     await _usersCollection.doc(employeeId).delete();

@@ -5,19 +5,12 @@ abstract class EmployeeEvent {
   const EmployeeEvent();
 }
 
-// ============================================================
-// LOAD ALL EMPLOYEES
-// ============================================================
 
 class EmployeesLoaded extends EmployeeEvent {
   const EmployeesLoaded();
 }
 
-// ============================================================
-// LOAD CURRENT EMPLOYEE
-// ============================================================
-//
-// Kept for compatibility with your existing application.
+
 
 class EmployeeLoaded extends EmployeeEvent {
   final Employee employee;
@@ -25,25 +18,17 @@ class EmployeeLoaded extends EmployeeEvent {
   const EmployeeLoaded(this.employee);
 }
 
-// ============================================================
-// RELOAD
-// ============================================================
 
 class EmployeesReloadRequested extends EmployeeEvent {
   const EmployeesReloadRequested();
 }
 
-// ============================================================
-// CLEAR
-// ============================================================
 
 class EmployeeCleared extends EmployeeEvent {
   const EmployeeCleared();
 }
 
-// ============================================================
-// SELECT EMPLOYEE
-// ============================================================
+
 
 class EmployeeSelected extends EmployeeEvent {
   final String employeeId;
@@ -51,19 +36,12 @@ class EmployeeSelected extends EmployeeEvent {
   const EmployeeSelected(this.employeeId);
 }
 
-// ============================================================
-// CLEAR SELECTION
-// ============================================================
+
 
 class EmployeeSelectionCleared extends EmployeeEvent {
   const EmployeeSelectionCleared();
 }
 
-// ============================================================
-// REGISTERED
-// ============================================================
-//
-// Kept for compatibility.
 
 class EmployeeRegistered extends EmployeeEvent {
   final Employee employee;
@@ -71,9 +49,6 @@ class EmployeeRegistered extends EmployeeEvent {
   const EmployeeRegistered(this.employee);
 }
 
-// ============================================================
-// ASSIGN AUTHORITY
-// ============================================================
 
 class EmployeeAuthorityAssigned extends EmployeeEvent {
   final String employeeId;
@@ -89,9 +64,6 @@ class EmployeeAuthorityAssigned extends EmployeeEvent {
   });
 }
 
-// ============================================================
-// ASSIGN MANAGER
-// ============================================================
 
 class EmployeeManagerAssigned extends EmployeeEvent {
   final String employeeId;
@@ -103,9 +75,7 @@ class EmployeeManagerAssigned extends EmployeeEvent {
   });
 }
 
-// ============================================================
-// REMOVE MANAGER
-// ============================================================
+
 
 class EmployeeManagerRemoved extends EmployeeEvent {
   final String employeeId;
@@ -115,9 +85,6 @@ class EmployeeManagerRemoved extends EmployeeEvent {
   });
 }
 
-// ============================================================
-// DELETE FIRESTORE PROFILE
-// ============================================================
 
 class EmployeeDeleted extends EmployeeEvent {
   final String employeeId;

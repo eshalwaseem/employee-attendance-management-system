@@ -34,9 +34,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     on<EmployeeDeleted>(_onEmployeeDeleted);
   }
 
-  // ============================================================
-  // LOAD ALL EMPLOYEES
-  // ============================================================
+ 
 
   Future<void> _onEmployeesLoaded(
     EmployeesLoaded event,
@@ -45,9 +43,6 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     await _loadEmployees(emit);
   }
 
-  // ============================================================
-  // RELOAD
-  // ============================================================
 
   Future<void> _onEmployeesReloadRequested(
     EmployeesReloadRequested event,
@@ -93,9 +88,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       addError(error, stackTrace);
     }
   }
-  // ============================================================
-  // CURRENT EMPLOYEE LOADED
-  // ============================================================
+
 
   void _onEmployeeLoaded(EmployeeLoaded event, Emitter<EmployeeState> emit) {
     final employees = [...state.employees];
@@ -120,17 +113,12 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     );
   }
 
-  // ============================================================
-  // CLEAR
-  // ============================================================
+
 
   void _onEmployeeCleared(EmployeeCleared event, Emitter<EmployeeState> emit) {
     emit(const EmployeeState());
   }
 
-  // ============================================================
-  // SELECT
-  // ============================================================
 
   void _onEmployeeSelected(
     EmployeeSelected event,
@@ -147,9 +135,6 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     emit(state.copyWith(selectedEmployeeId: event.employeeId));
   }
 
-  // ============================================================
-  // CLEAR SELECTION
-  // ============================================================
 
   void _onEmployeeSelectionCleared(
     EmployeeSelectionCleared event,
@@ -158,9 +143,6 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     emit(state.copyWith(clearSelection: true));
   }
 
-  // ============================================================
-  // REGISTERED
-  // ============================================================
 
   void _onEmployeeRegistered(
     EmployeeRegistered event,
@@ -188,9 +170,6 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     );
   }
 
-  // ============================================================
-  // ASSIGN AUTHORITY
-  // ============================================================
 
   Future<void> _onEmployeeAuthorityAssigned(
     EmployeeAuthorityAssigned event,
@@ -252,9 +231,6 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     }
   }
 
-  // ============================================================
-  // ASSIGN MANAGER
-  // ============================================================
 
   Future<void> _onEmployeeManagerAssigned(
     EmployeeManagerAssigned event,
@@ -314,9 +290,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     }
   }
 
-  // ============================================================
-  // REMOVE MANAGER
-  // ============================================================
+ 
 
   Future<void> _onEmployeeManagerRemoved(
     EmployeeManagerRemoved event,
@@ -390,9 +364,6 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     }
   }
 
-  // ============================================================
-  // DELETE
-  // ============================================================
 
   Future<void> _onEmployeeDeleted(
     EmployeeDeleted event,
@@ -429,9 +400,6 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     }
   }
 
-  // ============================================================
-  // REPLACE EMPLOYEE
-  // ============================================================
 
   List<Employee> _replaceEmployee(
     List<Employee> employees,
@@ -452,9 +420,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     return result;
   }
 
-  // ============================================================
-  // CLEAN ERROR
-  // ============================================================
+
 
   String _cleanError(Object error) {
     final message = error.toString();

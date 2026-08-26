@@ -16,9 +16,7 @@ class EmployeeState {
     this.errorMessage,
   });
 
-  // ============================================================
-  // CURRENT / SELECTED EMPLOYEE
-  // ============================================================
+
 
   Employee? get currentEmployee {
     if (selectedEmployeeId == null) {
@@ -32,9 +30,7 @@ class EmployeeState {
     return currentEmployee;
   }
 
-  // ============================================================
-  // STATUS
-  // ============================================================
+
 
   bool get isLoading {
     return status == EmployeeStatus.loading;
@@ -48,9 +44,7 @@ class EmployeeState {
     return status == EmployeeStatus.success;
   }
 
-  // ============================================================
-  // ROLE FILTERS
-  // ============================================================
+
 
   List<Employee> get admins {
     return employees
@@ -70,9 +64,7 @@ class EmployeeState {
         .toList();
   }
 
-  // ============================================================
-  // FIND EMPLOYEE
-  // ============================================================
+
 
   Employee? getById(String employeeId) {
     for (final employee in employees) {
@@ -84,9 +76,6 @@ class EmployeeState {
     return null;
   }
 
-  // ============================================================
-  // DIRECT REPORTS
-  // ============================================================
 
   List<Employee> getDirectReports(String managerId) {
     return employees
@@ -94,9 +83,6 @@ class EmployeeState {
         .toList();
   }
 
-  // ============================================================
-  // ALL REPORTS
-  // ============================================================
 
   List<Employee> getAllReports(String managerId) {
     final result = <Employee>[];
@@ -125,9 +111,6 @@ class EmployeeState {
     return result;
   }
 
-  // ============================================================
-  // ACCESSIBLE EMPLOYEES
-  // ============================================================
 
   List<Employee> getAccessibleEmployees(String employeeId) {
     final currentEmployee = getById(employeeId);
@@ -136,34 +119,21 @@ class EmployeeState {
       return [];
     }
 
-    // ==========================================================
-    // ADMIN
-    // ==========================================================
-    // Admin can see everyone except themselves.
     if (currentEmployee.isAdmin) {
       return employees.where((employee) => employee.id != employeeId).toList();
     }
 
-    // ==========================================================
-    // MANAGER
-    // ==========================================================
-    // Manager can see employees assigned to them.
+
     if (currentEmployee.isManager) {
       return employees
           .where((employee) => employee.managerId == employeeId)
           .toList();
     }
 
-    // ==========================================================
-    // EMPLOYEE
-    // ==========================================================
-    // Employees cannot see other employees.
+  
     return [];
   }
 
-  // ============================================================
-  // CHECK VIEW ACCESS
-  // ============================================================
 
   bool canViewEmployee({required String viewerId, required String targetId}) {
     if (viewerId == targetId) {
@@ -173,9 +143,6 @@ class EmployeeState {
     return employees.any((employee) => employee.id == targetId);
   }
 
-  // ============================================================
-  // UNASSIGNED EMPLOYEES
-  // ============================================================
 
   List<Employee> get unassignedEmployees {
     return employees.where((employee) {
@@ -183,9 +150,6 @@ class EmployeeState {
     }).toList();
   }
 
-  // ============================================================
-  // COPY WITH
-  // ============================================================
 
   EmployeeState copyWith({
     EmployeeStatus? status,
