@@ -427,7 +427,7 @@ class _AttendancePageState extends State<AttendancePage> {
                 ...visibleEmployees.map((employee) {
                   final employeeRecords = groupedRecords[employee.id] ?? [];
 
-                  // TODAY → Screenshot-style employee tiles
+                  
                   if (_selectedPeriod == AttendancePeriod.today) {
                     final todayAttendance = employeeRecords.isEmpty
                         ? null
