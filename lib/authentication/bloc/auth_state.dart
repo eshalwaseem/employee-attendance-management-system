@@ -1,80 +1,106 @@
 import '../models/user.dart';
 
-enum AuthStatus {
-  initial,
-  invalid,
-  valid,
-  loading,
-  success,
-  authenticated,
-  failure,
-}
+enum AuthStatus { initial, loading, valid, invalid, authenticated, failure }
 
 class AuthState {
-  final String name;
-  final String email;
   final AuthStatus status;
-  final String? errorMessage;
+
   final User? user;
 
+  final String name;
+  final String email;
+  final String password;
+
+  final String? errorMessage;
+
   const AuthState({
+    this.status = AuthStatus.initial,
+    this.user,
     this.name = '',
     this.email = '',
-    this.status = AuthStatus.initial,
+    this.password = '',
     this.errorMessage,
-    this.user,
   });
 
-  bool get isEmailValid =>
-      status == AuthStatus.valid ||
-      status == AuthStatus.loading ||
-      status == AuthStatus.success ||
-      status == AuthStatus.authenticated;
+  // ============================================================
+  // VALIDATION GETTERS
+  // ============================================================
 
-  bool get isLoading =>
-      status == AuthStatus.loading;
+  bool get isNameValid {
+    return name.trim().length >= 2;
+  }
 
-  bool get isSuccess =>
-      status == AuthStatus.success;
+  bool get isEmailValid {
+    final value = email.trim();
 
-  bool get isAuthenticated =>
-      status == AuthStatus.authenticated ||
-      status == AuthStatus.success;
+    if (value.isEmpty) {
+      return false;
+    }
 
-  bool get hasError =>
-      status == AuthStatus.invalid ||
-      status == AuthStatus.failure;
+    return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value);
+  }
+
+  bool get isPasswordValid {
+    return password.length >= 6;
+  }
+
+  // ============================================================
+  // STATUS GETTERS
+  // ============================================================
+
+  bool get isLoading {
+    return status == AuthStatus.loading;
+  }
+
+  bool get hasError {
+    return status == AuthStatus.invalid || status == AuthStatus.failure;
+  }
+
+  bool get isSuccess {
+    return status == AuthStatus.authenticated;
+  }
+
+  bool get isAuthenticated {
+    return status == AuthStatus.authenticated && user != null;
+  }
+
+  // ============================================================
+  // COPY WITH
+  // ============================================================
 
   AuthState copyWith({
+    AuthStatus? status,
+    User? user,
     String? name,
     String? email,
-    AuthStatus? status,
+    String? password,
     String? errorMessage,
-    User? user,
-    bool clearError = false,
     bool clearUser = false,
+    bool clearError = false,
   }) {
     return AuthState(
+      status: status ?? this.status,
+      user: clearUser ? null : user ?? this.user,
       name: name ?? this.name,
       email: email ?? this.email,
-      status: status ?? this.status,
-      errorMessage: clearError
-          ? null
-          : errorMessage ?? this.errorMessage,
-      user: clearUser
-          ? null
-          : user ?? this.user,
+      password: password ?? this.password,
+      errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
     );
   }
+
+  // ============================================================
+  // DEBUG
+  // ============================================================
 
   @override
   String toString() {
     return 'AuthState('
+        'status: $status, '
+        'user: $user, '
         'name: $name, '
         'email: $email, '
-        'status: $status, '
-        'errorMessage: $errorMessage, '
-        'user: $user'
+        'passwordLength: ${password.length}, '
+        'errorMessage: $errorMessage'
         ')';
   }
 }

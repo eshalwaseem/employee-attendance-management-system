@@ -5,9 +5,9 @@ import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 import '../widgets/widgets.dart';
-import 'signup_page.dart';
 
 import '../../dashboard/view/dashboard_page.dart';
+import 'signup_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -19,6 +19,8 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage>
     with SingleTickerProviderStateMixin {
   final TextEditingController _emailController = TextEditingController();
+
+  final TextEditingController _passwordController = TextEditingController();
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
@@ -70,24 +72,44 @@ class _LoginPageState extends State<LoginPage>
   @override
   void dispose() {
     _emailController.dispose();
+    _passwordController.dispose();
     _entranceController.dispose();
+
     super.dispose();
   }
 
+  // ============================================================
+  // SUBMIT
+  // ============================================================
 
   void _submit() {
     FocusManager.instance.primaryFocus?.unfocus();
 
-    final valid = _formKey.currentState?.validate() ?? false;
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
 
-    if (!valid) {
-      context.read<AuthBloc>().add(EmailChanged(_emailController.text));
+    if (email.isEmpty) {
+      context.read<AuthBloc>().add(const EmailChanged(''));
 
       return;
     }
 
+    if (password.isEmpty) {
+      context.read<AuthBloc>().add(const PasswordChanged(''));
+
+      return;
+    }
+
+    context.read<AuthBloc>().add(EmailChanged(email));
+
+    context.read<AuthBloc>().add(PasswordChanged(password));
+
     context.read<AuthBloc>().add(const LoginSubmitted());
   }
+
+  // ============================================================
+  // ANIMATION
+  // ============================================================
 
   Widget _animatedSection({
     required Animation<double> animation,
@@ -106,6 +128,9 @@ class _LoginPageState extends State<LoginPage>
     );
   }
 
+  // ============================================================
+  // SIGNUP ROUTE
+  // ============================================================
 
   Route<void> _signupRoute() {
     return PageRouteBuilder<void>(
@@ -133,20 +158,30 @@ class _LoginPageState extends State<LoginPage>
     );
   }
 
+  // ============================================================
+  // BUILD
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        if (state.status == AuthStatus.success && state.user != null) {
+        // ------------------------------------------------------
+        // LOGIN SUCCESS
+        // ------------------------------------------------------
+
+        if (state.status == AuthStatus.authenticated && state.user != null) {
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => const DashboardPage()),
             (route) => false,
           );
         }
+
+        // ------------------------------------------------------
+        // ERROR
+        // ------------------------------------------------------
 
         if (state.status == AuthStatus.failure) {
           ScaffoldMessenger.of(context)
@@ -154,7 +189,7 @@ class _LoginPageState extends State<LoginPage>
             ..showSnackBar(
               SnackBar(
                 behavior: SnackBarBehavior.floating,
-                backgroundColor: colorScheme.error,
+                backgroundColor: theme.colorScheme.error,
                 content: Text(state.errorMessage ?? 'Unable to sign in.'),
               ),
             );
@@ -213,6 +248,7 @@ class _LoginPageState extends State<LoginPage>
 
                             const SizedBox(height: 32),
 
+                            // EMAIL
                             _animatedSection(
                               animation: _fieldAnimation,
                               child: BlocBuilder<AuthBloc, AuthState>(
@@ -233,14 +269,37 @@ class _LoginPageState extends State<LoginPage>
                               ),
                             ),
 
+                            const SizedBox(height: 16),
+
+                            // PASSWORD
+                            _animatedSection(
+                              animation: _fieldAnimation,
+                              child: BlocBuilder<AuthBloc, AuthState>(
+                                builder: (context, state) {
+                                  return PasswordField(
+                                    controller: _passwordController,
+                                    hasError: state.hasError,
+                                    errorText: state.errorMessage,
+                                    onChanged: (password) {
+                                      context.read<AuthBloc>().add(
+                                        PasswordChanged(password),
+                                      );
+                                    },
+                                    onSubmitted: _submit,
+                                  );
+                                },
+                              ),
+                            ),
+
                             const SizedBox(height: 18),
 
+                            // LOGIN BUTTON
                             _animatedSection(
                               animation: _buttonAnimation,
                               child: BlocBuilder<AuthBloc, AuthState>(
                                 builder: (context, state) {
                                   return AuthButton(
-                                    label: 'Continue',
+                                    label: 'Log in',
                                     isLoading: state.isLoading,
                                     isSuccess: state.isSuccess,
                                     onPressed: _submit,
@@ -251,6 +310,7 @@ class _LoginPageState extends State<LoginPage>
 
                             const SizedBox(height: 30),
 
+                            // SIGNUP
                             _animatedSection(
                               animation: _bottomAnimation,
                               child: Row(

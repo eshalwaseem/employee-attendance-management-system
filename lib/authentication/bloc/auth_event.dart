@@ -8,7 +8,9 @@ class NameChanged extends AuthEvent {
   const NameChanged(this.name);
 
   @override
-  String toString() => 'NameChanged(name: $name)';
+  String toString() {
+    return 'NameChanged(name: $name)';
+  }
 }
 
 class EmailChanged extends AuthEvent {
@@ -17,37 +19,59 @@ class EmailChanged extends AuthEvent {
   const EmailChanged(this.email);
 
   @override
-  String toString() => 'EmailChanged(email: $email)';
+  String toString() {
+    return 'EmailChanged(email: $email)';
+  }
+}
+
+
+class PasswordChanged extends AuthEvent {
+  final String password;
+
+  const PasswordChanged(this.password);
+
+  @override
+  String toString() {
+    return 'PasswordChanged(password: ***hidden***)';
+  }
 }
 
 class LoginSubmitted extends AuthEvent {
   const LoginSubmitted();
 
   @override
-  String toString() => 'LoginSubmitted()';
+  String toString() {
+    return 'LoginSubmitted()';
+  }
 }
+
 
 class SignupSubmitted extends AuthEvent {
   final String name;
 
-  const SignupSubmitted({
-    required this.name,
-  });
+  const SignupSubmitted({required this.name});
 
   @override
-  String toString() => 'SignupSubmitted(name: $name)';
+  String toString() {
+    return 'SignupSubmitted(name: $name)';
+  }
 }
 
 class AuthSessionRequested extends AuthEvent {
   const AuthSessionRequested();
 
   @override
-  String toString() => 'AuthSessionRequested()';
+  String toString() {
+    return 'AuthSessionRequested()';
+  }
 }
+
 
 class LogoutRequested extends AuthEvent {
   const LogoutRequested();
 
   @override
-  String toString() => 'LogoutRequested()';
+  String toString() {
+    return 'LogoutRequested()';
+  }
 }

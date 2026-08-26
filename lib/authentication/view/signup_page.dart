@@ -22,6 +22,8 @@ class _SignupPageState extends State<SignupPage>
 
   final TextEditingController _emailController = TextEditingController();
 
+  final TextEditingController _passwordController = TextEditingController();
+
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   late final AnimationController _entranceController;
@@ -73,33 +75,49 @@ class _SignupPageState extends State<SignupPage>
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
+    _passwordController.dispose();
     _entranceController.dispose();
+
     super.dispose();
   }
+
+  // ============================================================
+  // SUBMIT
+  // ============================================================
 
   void _submit() {
     FocusManager.instance.primaryFocus?.unfocus();
 
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
+    final password = _passwordController.text;
 
-    if (name.isEmpty) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(
-            behavior: SnackBarBehavior.floating,
-            content: Text('Please enter your name.'),
-          ),
-        );
+    // ----------------------------------------------------------
+    // NAME
+    // ----------------------------------------------------------
+
+    if (name.length < 2) {
+      context.read<AuthBloc>().add(NameChanged(name));
 
       return;
     }
 
-    final valid = _formKey.currentState?.validate() ?? false;
+    // ----------------------------------------------------------
+    // EMAIL
+    // ----------------------------------------------------------
 
-    if (!valid) {
-      context.read<AuthBloc>().add(EmailChanged(email));
+    if (email.isEmpty) {
+      context.read<AuthBloc>().add(const EmailChanged(''));
+
+      return;
+    }
+
+    // ----------------------------------------------------------
+    // PASSWORD
+    // ----------------------------------------------------------
+
+    if (password.isEmpty) {
+      context.read<AuthBloc>().add(const PasswordChanged(''));
 
       return;
     }
@@ -108,9 +126,14 @@ class _SignupPageState extends State<SignupPage>
 
     context.read<AuthBloc>().add(EmailChanged(email));
 
+    context.read<AuthBloc>().add(PasswordChanged(password));
+
     context.read<AuthBloc>().add(SignupSubmitted(name: name));
   }
 
+  // ============================================================
+  // ANIMATION
+  // ============================================================
 
   Widget _animatedSection({
     required Animation<double> animation,
@@ -129,6 +152,9 @@ class _SignupPageState extends State<SignupPage>
     );
   }
 
+  // ============================================================
+  // LOGIN ROUTE
+  // ============================================================
 
   Route<void> _loginRoute() {
     return PageRouteBuilder<void>(
@@ -156,21 +182,30 @@ class _SignupPageState extends State<SignupPage>
     );
   }
 
+  // ============================================================
+  // BUILD
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
+        // ------------------------------------------------------
         // SIGNUP SUCCESS
-        if (state.status == AuthStatus.success && state.user != null) {
+        // ------------------------------------------------------
+
+        if (state.status == AuthStatus.authenticated && state.user != null) {
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => const DashboardPage()),
             (route) => false,
           );
         }
+
+        // ------------------------------------------------------
+        // ERROR
+        // ------------------------------------------------------
 
         if (state.status == AuthStatus.failure) {
           ScaffoldMessenger.of(context)
@@ -178,7 +213,7 @@ class _SignupPageState extends State<SignupPage>
             ..showSnackBar(
               SnackBar(
                 behavior: SnackBarBehavior.floating,
-                backgroundColor: colorScheme.error,
+                backgroundColor: theme.colorScheme.error,
                 content: Text(
                   state.errorMessage ?? 'Unable to create your account.',
                 ),
@@ -239,19 +274,17 @@ class _SignupPageState extends State<SignupPage>
 
                             const SizedBox(height: 30),
 
+                            // NAME
                             _animatedSection(
                               animation: _fieldAnimation,
                               child: BlocBuilder<AuthBloc, AuthState>(
                                 builder: (context, state) {
-                                  final name = _nameController.text.trim();
-
                                   return NameField(
                                     controller: _nameController,
-                                    isValid: name.length >= 2,
-                                    hasError: state.hasError && name.isEmpty,
-                                    errorText: name.isEmpty
-                                        ? state.errorMessage
-                                        : null,
+                                    isValid: state.isNameValid,
+                                    hasError:
+                                        state.hasError && state.name.isEmpty,
+                                    errorText: state.errorMessage,
                                     onChanged: (name) {
                                       context.read<AuthBloc>().add(
                                         NameChanged(name),
@@ -267,6 +300,7 @@ class _SignupPageState extends State<SignupPage>
 
                             const SizedBox(height: 16),
 
+                            // EMAIL
                             _animatedSection(
                               animation: _fieldAnimation,
                               child: BlocBuilder<AuthBloc, AuthState>(
@@ -279,6 +313,28 @@ class _SignupPageState extends State<SignupPage>
                                     onChanged: (email) {
                                       context.read<AuthBloc>().add(
                                         EmailChanged(email),
+                                      );
+                                    },
+                                    onSubmitted: _submit,
+                                  );
+                                },
+                              ),
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // PASSWORD
+                            _animatedSection(
+                              animation: _fieldAnimation,
+                              child: BlocBuilder<AuthBloc, AuthState>(
+                                builder: (context, state) {
+                                  return PasswordField(
+                                    controller: _passwordController,
+                                    hasError: state.hasError,
+                                    errorText: state.errorMessage,
+                                    onChanged: (password) {
+                                      context.read<AuthBloc>().add(
+                                        PasswordChanged(password),
                                       );
                                     },
                                     onSubmitted: _submit,

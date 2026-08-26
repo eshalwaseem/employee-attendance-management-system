@@ -1,7 +1,7 @@
 export 'auth_button.dart';
 export 'email_field.dart';
 export 'name_field.dart';
-
+export 'password_field.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
