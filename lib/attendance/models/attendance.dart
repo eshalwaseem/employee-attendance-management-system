@@ -1,8 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 enum AttendanceStatus { present, late, absent }
 
 class Attendance {
   final String id;
   final String employeeId;
+  final String managerId;
   final DateTime date;
   final DateTime? checkIn;
   final AttendanceStatus status;
@@ -11,15 +14,21 @@ class Attendance {
   const Attendance({
     required this.id,
     required this.employeeId,
+    required this.managerId,
     required this.date,
     this.checkIn,
     required this.status,
     this.isSynced = true,
   });
 
+  // ============================================================
+  // COPY WITH
+  // ============================================================
+
   Attendance copyWith({
     String? id,
     String? employeeId,
+    String? managerId,
     DateTime? date,
     DateTime? checkIn,
     AttendanceStatus? status,
@@ -28,6 +37,7 @@ class Attendance {
     return Attendance(
       id: id ?? this.id,
       employeeId: employeeId ?? this.employeeId,
+      managerId: managerId ?? this.managerId,
       date: date ?? this.date,
       checkIn: checkIn ?? this.checkIn,
       status: status ?? this.status,
@@ -35,39 +45,75 @@ class Attendance {
     );
   }
 
-  
-  factory Attendance.fromJson(Map<String, dynamic> json) {
+  // ============================================================
+  // FROM FIRESTORE
+  // ============================================================
+
+  factory Attendance.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> document,
+  ) {
+    final data = document.data() ?? {};
+
+    final dateValue = data['date'];
+    final checkInValue = data['checkIn'];
+
+    DateTime date;
+
+    if (dateValue is Timestamp) {
+      date = dateValue.toDate();
+    } else if (dateValue is String) {
+      date = DateTime.tryParse(dateValue) ?? DateTime.now();
+    } else {
+      date = DateTime.now();
+    }
+
+    DateTime? checkIn;
+
+    if (checkInValue is Timestamp) {
+      checkIn = checkInValue.toDate();
+    } else if (checkInValue is String) {
+      checkIn = DateTime.tryParse(checkInValue);
+    }
+
     return Attendance(
-      id: json['id'] as String,
-      employeeId: json['employeeId'] as String,
-      date: DateTime.parse(json['date'] as String),
-      checkIn: json['checkIn'] == null
-          ? null
-          : DateTime.parse(json['checkIn'] as String),
+      id: document.id,
+      employeeId: data['employeeId'] as String? ?? '',
+      managerId: data['managerId'] as String? ?? '',
+      date: date,
+      checkIn: checkIn,
       status: AttendanceStatus.values.firstWhere(
-        (value) => value.name == json['status'],
+        (value) => value.name == data['status'],
         orElse: () => AttendanceStatus.absent,
       ),
-      isSynced: json['isSynced'] as bool? ?? true,
+      isSynced: data['isSynced'] as bool? ?? true,
     );
   }
 
-  Map<String, dynamic> toJson() {
+  // ============================================================
+  // TO FIRESTORE
+  // ============================================================
+
+  Map<String, dynamic> toFirestore() {
     return {
-      'id': id,
       'employeeId': employeeId,
-      'date': date.toIso8601String(),
-      'checkIn': checkIn?.toIso8601String(),
+      'managerId': managerId,
+      'date': Timestamp.fromDate(date),
+      'checkIn': checkIn == null ? null : Timestamp.fromDate(checkIn!),
       'status': status.name,
       'isSynced': isSynced,
     };
   }
+
+  // ============================================================
+  // TO STRING
+  // ============================================================
 
   @override
   String toString() {
     return 'Attendance('
         'id: $id, '
         'employeeId: $employeeId, '
+        'managerId: $managerId, '
         'date: $date, '
         'checkIn: $checkIn, '
         'status: $status, '

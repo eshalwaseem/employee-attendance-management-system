@@ -4,13 +4,23 @@ import '../models/attendance.dart';
 
 class AttendanceListItem extends StatelessWidget {
   final String employeeName;
+  final String? profileImagePath;
   final Attendance attendance;
+  final bool showEmployeeName;
 
   const AttendanceListItem({
     super.key,
     required this.employeeName,
     required this.attendance,
+    this.profileImagePath,
+    this.showEmployeeName = true,
   });
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/'
+        '${date.month.toString().padLeft(2, '0')}/'
+        '${date.year}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,60 +41,73 @@ class AttendanceListItem extends StatelessWidget {
         : TimeOfDay.fromDateTime(checkIn).format(context);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE8E8E8)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.035),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: const Color(0xFFF9F9F9),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFEAEAEA)),
       ),
       child: Row(
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.08),
+              color: statusColor.withValues(alpha: 0.10),
               shape: BoxShape.circle,
             ),
             child: Icon(
-              Icons.person_rounded,
-              color: theme.colorScheme.primary,
-              size: 25,
+              isLate ? Icons.schedule_rounded : Icons.check_rounded,
+              size: 19,
+              color: statusColor,
             ),
           ),
 
-          const SizedBox(width: 12),
+          const SizedBox(width: 11),
 
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (showEmployeeName) ...[
+                  Text(
+                    employeeName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                ],
+
                 Text(
-                  employeeName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleMedium,
+                  _formatDate(attendance.date),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
 
-                const SizedBox(height: 5),
+                const SizedBox(height: 3),
 
                 Row(
                   children: [
                     Icon(
-                      Icons.access_time_rounded,
-                      size: 15,
+                      Icons.login_rounded,
+                      size: 13,
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 4),
-                    Text(timeText, style: theme.textTheme.bodyMedium),
+                    Text(
+                      'Checked in at $timeText',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontSize: 11,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -92,7 +115,7 @@ class AttendanceListItem extends StatelessWidget {
           ),
 
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: statusColor.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(20),
@@ -101,7 +124,7 @@ class AttendanceListItem extends StatelessWidget {
               statusText,
               style: TextStyle(
                 color: statusColor,
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.w700,
               ),
             ),

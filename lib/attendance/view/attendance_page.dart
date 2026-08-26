@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
+import '../widgets/today_employee_attendance.dart';
+import '../models/attendance.dart';
+import '../../shared/widgets/app_bottom_navigation.dart';
 import '../../authentication/bloc/auth_bloc.dart';
-import '../../employees/bloc/employee_bloc.dart';
 import '../../employees/models/employee.dart';
+import '../../employees/bloc/employee_bloc.dart';
+import '../../employees/bloc/employee_event.dart';
 import '../bloc/attendance_bloc.dart';
 import '../bloc/attendance_event.dart';
 import '../bloc/attendance_state.dart';
 import '../widgets/widgets.dart';
+
+enum AttendancePeriod { today, thisWeek, thisMonth }
 
 class AttendancePage extends StatefulWidget {
   const AttendancePage({super.key});
@@ -18,8 +23,7 @@ class AttendancePage extends StatefulWidget {
 
 class _AttendancePageState extends State<AttendancePage> {
   int _selectedTab = 0;
-
-  DateTime _selectedDate = DateTime.now();
+  AttendancePeriod _selectedPeriod = AttendancePeriod.today;
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -30,9 +34,22 @@ class _AttendancePageState extends State<AttendancePage> {
     super.initState();
 
     _searchController.addListener(() {
+      if (!mounted) return;
+
       setState(() {
         _searchQuery = _searchController.text.trim().toLowerCase();
       });
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      // IMPORTANT:
+      // Load ALL users from Firestore.
+      context.read<EmployeeBloc>().add(const EmployeesLoaded());
+
+      // Load attendance records.
+      context.read<AttendanceBloc>().add(const AttendanceLoaded());
     });
   }
 
@@ -42,64 +59,75 @@ class _AttendancePageState extends State<AttendancePage> {
     super.dispose();
   }
 
-  void _previousDay() {
-    setState(() {
-      _selectedDate = _selectedDate.subtract(const Duration(days: 1));
-    });
-  }
-
-  void _nextDay() {
-    setState(() {
-      _selectedDate = _selectedDate.add(const Duration(days: 1));
-    });
-  }
-
-  String _formatDate(DateTime date) {
-    const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
-  }
-
   bool _sameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  bool _isInSelectedPeriod(DateTime date) {
+    final now = DateTime.now();
+
+    switch (_selectedPeriod) {
+      case AttendancePeriod.today:
+        return _sameDay(date, now);
+
+      case AttendancePeriod.thisWeek:
+        final today = DateTime(now.year, now.month, now.day);
+
+        final monday = today.subtract(Duration(days: today.weekday - 1));
+
+        final sunday = monday.add(const Duration(days: 6));
+
+        final checkDate = DateTime(date.year, date.month, date.day);
+
+        return !checkDate.isBefore(monday) && !checkDate.isAfter(sunday);
+
+      case AttendancePeriod.thisMonth:
+        return date.year == now.year && date.month == now.month;
+    }
+  }
+
+  String _emptyPeriodMessage() {
+    switch (_selectedPeriod) {
+      case AttendancePeriod.today:
+        return 'No attendance recorded today.';
+
+      case AttendancePeriod.thisWeek:
+        return 'No attendance recorded this week.';
+
+      case AttendancePeriod.thisMonth:
+        return 'No attendance recorded this month.';
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final authState = context.watch<AuthBloc>().state;
-
     final currentUser = authState.user;
 
     if (currentUser == null) {
       return const Scaffold(body: Center(child: Text('No user is logged in.')));
     }
 
-    final employeeBloc = context.watch<EmployeeBloc>();
+    final currentEmployee = Employee(
+      id: currentUser.id,
+      name: currentUser.name,
+      email: currentUser.email,
+      role: currentUser.role,
+      managerId: currentUser.managerId,
+      profileImagePath: currentUser.profileImagePath,
+      permissions: currentUser.permissions,
+    );
 
-    final currentEmployee = employeeBloc.state.employees
-        .where((employee) => employee.id == currentUser.id)
-        .firstOrNull;
+    final employeeState = context.watch<EmployeeBloc>().state;
 
-    if (currentEmployee == null) {
-      return const Scaffold(
-        body: Center(child: Text('Employee profile not found.')),
-      );
-    }
-
-    final accessibleEmployees = employeeBloc.getAccessibleEmployees(
+    /*
+     * IMPORTANT:
+     *
+     * EmployeeState must contain ALL users from Firestore.
+     * getAccessibleEmployees() then determines which ones
+     * this particular user can see.
+     */
+    final accessibleEmployees = employeeState.getAccessibleEmployees(
       currentEmployee.id,
     );
 
@@ -110,24 +138,28 @@ class _AttendancePageState extends State<AttendancePage> {
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-
         title: const Text(
           'Attendance',
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
-
         centerTitle: false,
       ),
+
+      bottomNavigationBar: const AppBottomNavigation(selectedIndex: 1),
 
       body: SafeArea(
         child: Column(
           children: [
-            _buildTabs(accessibleEmployees.isNotEmpty),
+            _buildTabs(),
+            _buildPeriodSelector(),
 
             Expanded(
               child: _selectedTab == 0
                   ? _buildMyAttendance(currentEmployee)
-                  : _buildPeopleYouCanView(accessibleEmployees),
+                  : _buildPeopleYouCanView(
+                      currentEmployee,
+                      accessibleEmployees,
+                    ),
             ),
           ],
         ),
@@ -135,11 +167,11 @@ class _AttendancePageState extends State<AttendancePage> {
     );
   }
 
-  Widget _buildTabs(bool hasAccessibleEmployees) {
-    if (!hasAccessibleEmployees) {
-      return const SizedBox(height: 16);
-    }
+  // ============================================================
+  // TABS
+  // ============================================================
 
+  Widget _buildTabs() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       child: Container(
@@ -166,6 +198,10 @@ class _AttendancePageState extends State<AttendancePage> {
       onTap: () {
         setState(() {
           _selectedTab = index;
+
+          if (index == 0) {
+            _searchController.clear();
+          }
         });
       },
       child: AnimatedContainer(
@@ -198,73 +234,235 @@ class _AttendancePageState extends State<AttendancePage> {
     );
   }
 
+  // ============================================================
+  // MY ATTENDANCE
+  // ============================================================
+
   Widget _buildMyAttendance(Employee employee) {
     return _buildAttendanceContent(
-      employeeIds: [employee.id],
-      title: employee.name,
+      employees: [employee],
+      sectionTitle: 'My Attendance',
+      showSearch: false,
+      showEmployeeName: false,
     );
   }
 
+  // ============================================================
+  // PEOPLE I CAN VIEW
+  // ============================================================
+
+  Widget _buildPeopleYouCanView(
+    Employee currentEmployee,
+    List<Employee> accessibleEmployees,
+  ) {
+    final employeeState = context.watch<EmployeeBloc>().state;
+
+    if (employeeState.isLoading && employeeState.employees.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (employeeState.hasError) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Text(
+            employeeState.errorMessage ?? 'Unable to load employees.',
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
+    if (accessibleEmployees.isEmpty) {
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(20, 30, 20, 30),
+        children: [
+          Text(
+            'People I Can View',
+            style: Theme.of(context).textTheme.headlineSmall
+                ?.copyWith(fontSize: 22),
+          ),
+
+          const SizedBox(height: 8),
+
+          Text(
+            currentEmployee.isAdmin
+                ? 'No other employees are available.'
+                : 'You have no one reporting to you yet.',
+          ),
+
+          const SizedBox(height: 30),
+
+          _buildEmptyState(message: 'No other employees available.'),
+        ],
+      );
+    }
+
+    return _buildAttendanceContent(
+      employees: accessibleEmployees,
+      sectionTitle: 'People I Can View',
+      showSearch: true,
+      showEmployeeName: true,
+    );
+  }
+
+  // ============================================================
+  // ATTENDANCE CONTENT
+  // ============================================================
+
   Widget _buildAttendanceContent({
-    required List<String> employeeIds,
-    required String title,
+    required List<Employee> employees,
+    required String sectionTitle,
+    required bool showSearch,
+    required bool showEmployeeName,
   }) {
+    final employeesById = {
+      for (final employee in employees) employee.id: employee,
+    };
+
+    final visibleEmployees = employees.where((employee) {
+      if (!showSearch || _searchQuery.isEmpty) {
+        return true;
+      }
+
+      return employee.name.toLowerCase().contains(_searchQuery);
+    }).toList();
+
     return BlocBuilder<AttendanceBloc, AttendanceState>(
       builder: (context, state) {
         if (state.isLoading && state.records.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final records = state.records
-            .where((record) {
-              return employeeIds.contains(record.employeeId) &&
-                  _sameDay(record.date, _selectedDate);
-            })
-            .where((record) {
-              if (_searchQuery.isEmpty) {
-                return true;
-              }
+        final filteredRecords = state.records.where((record) {
+          return employeesById.containsKey(record.employeeId) &&
+              _isInSelectedPeriod(record.date);
+        }).toList();
 
-              return title.toLowerCase().contains(_searchQuery);
-            })
-            .toList();
+        // ======================================================
+        // MY ATTENDANCE
+        // ======================================================
+
+        if (!showSearch) {
+          final myRecords = filteredRecords;
+
+          return RefreshIndicator(
+            onRefresh: () async {
+              context.read<EmployeeBloc>().add(const EmployeesLoaded());
+
+              context.read<AttendanceBloc>().add(const AttendanceLoaded());
+            },
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
+              children: [
+                const SizedBox(height: 12),
+
+                Text(
+                  sectionTitle,
+                  style: Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w800),
+                ),
+
+                const SizedBox(height: 12),
+
+                if (myRecords.isEmpty)
+                  _buildEmptyState(message: _emptyPeriodMessage())
+                else
+                  ...myRecords.map(
+                    (record) => AttendanceListItem(
+                      employeeName: employees.first.name,
+                      attendance: record,
+                      profileImagePath: employees.first.profileImagePath,
+                      showEmployeeName: false,
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }
+
+        // ======================================================
+        // PEOPLE / MANAGER / ADMIN VIEW
+        // ======================================================
+
+        final groupedRecords = <String, List<Attendance>>{};
+
+        for (final employee in visibleEmployees) {
+          groupedRecords[employee.id] = [];
+        }
+
+        for (final record in filteredRecords) {
+          if (groupedRecords.containsKey(record.employeeId)) {
+            groupedRecords[record.employeeId]!.add(record);
+          }
+        }
 
         return RefreshIndicator(
           onRefresh: () async {
+            context.read<EmployeeBloc>().add(const EmployeesLoaded());
+
             context.read<AttendanceBloc>().add(const AttendanceLoaded());
           },
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
             children: [
-              _buildPeriodSelector(),
+              if (showSearch) ...[
+                const SizedBox(height: 12),
 
-              const SizedBox(height: 18),
+                _buildSearchField(),
 
-              _buildDateSelector(),
+                const SizedBox(height: 20),
+              ],
 
-              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      sectionTitle,
+                      style: Theme.of(context).textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                  ),
 
-              _buildSearchField(),
-
-              const SizedBox(height: 20),
-
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                  Text(
+                    '${visibleEmployees.length} employees',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFF777777),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 12),
 
-              if (records.isEmpty)
-                _buildEmptyState()
+              if (visibleEmployees.isEmpty)
+                _buildEmptyState(message: 'No employees found.')
               else
-                ...records.map(
-                  (record) => AttendanceListItem(
-                    employeeName: title,
-                    attendance: record,
-                  ),
-                ),
+                ...visibleEmployees.map((employee) {
+                  final employeeRecords = groupedRecords[employee.id] ?? [];
+
+                  // TODAY → Screenshot-style employee tiles
+                  if (_selectedPeriod == AttendancePeriod.today) {
+                    final todayAttendance = employeeRecords.isEmpty
+                        ? null
+                        : employeeRecords.first;
+
+                    return TodayEmployeeAttendanceTile(
+                      employeeName: employee.name,
+                      profileImagePath: employee.profileImagePath,
+                      attendance: todayAttendance,
+                    );
+                  }
+
+                  // WEEK AND MONTH → Keep your existing cards unchanged
+                  return EmployeeAttendanceCard(
+                    employeeName: employee.name,
+                    profileImagePath: employee.profileImagePath,
+                    records: employeeRecords,
+                  );
+                }),
             ],
           ),
         );
@@ -272,155 +470,97 @@ class _AttendancePageState extends State<AttendancePage> {
     );
   }
 
-  Widget _buildPeopleYouCanView(List<Employee> employees) {
-    final filteredEmployees = employees.where((employee) {
-      if (_searchQuery.isEmpty) {
-        return true;
-      }
-
-      return employee.name.toLowerCase().contains(_searchQuery) ||
-          employee.email.toLowerCase().contains(_searchQuery);
-    }).toList();
-
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
-      children: [
-        Text(
-          'People you can view',
-          style: Theme.of(context).textTheme.headlineSmall
-              ?.copyWith(fontSize: 22),
-        ),
-
-        const SizedBox(height: 6),
-
-        Text(
-          'Select a person to view their attendance.',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-
-        const SizedBox(height: 18),
-
-        _buildSearchField(),
-
-        const SizedBox(height: 18),
-
-        if (filteredEmployees.isEmpty)
-          _buildEmptyState(message: 'No employees found.')
-        else
-          ...filteredEmployees.map((employee) => _buildEmployeeCard(employee)),
-      ],
-    );
-  }
-
-  Widget _buildEmployeeCard(Employee employee) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE8E8E8)),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
-
-        leading: CircleAvatar(
-          radius: 24,
-          backgroundColor: Theme.of(context).colorScheme.primary
-              .withValues(alpha: 0.08),
-          child: Icon(
-            Icons.person_rounded,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-        ),
-
-        title: Text(
-          employee.name,
-          style: const TextStyle(fontWeight: FontWeight.w700),
-        ),
-
-        subtitle: Text(employee.email),
-
-        trailing: const Icon(Icons.chevron_right_rounded),
-
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => EmployeeAttendancePage(employee: employee),
-            ),
-          );
-        },
-      ),
-    );
-  }
+  // ============================================================
+  // PERIOD SELECTOR
+  // ============================================================
 
   Widget _buildPeriodSelector() {
-    return Row(
-      children: [
-        Expanded(child: _periodButton('Daily', true)),
-        const SizedBox(width: 8),
-        Expanded(child: _periodButton('Monthly', false)),
-        const SizedBox(width: 8),
-        Expanded(child: _periodButton('Custom', false)),
-      ],
-    );
-  }
-
-  Widget _periodButton(String title, bool selected) {
-    return Container(
-      height: 42,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: selected ? Theme.of(context).colorScheme.primary : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: selected
-              ? Theme.of(context).colorScheme.primary
-              : const Color(0xFFE5E5E5),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEFEFEF),
+          borderRadius: BorderRadius.circular(13),
         ),
-      ),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          color: selected ? Colors.white : const Color(0xFF666666),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDateSelector() {
-    return Container(
-      height: 52,
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE7E7E7)),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: _previousDay,
-            icon: const Icon(Icons.chevron_left_rounded),
-          ),
-
-          Expanded(
-            child: Text(
-              _formatDate(_selectedDate),
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.w700),
+        child: Row(
+          children: [
+            Expanded(
+              child: _periodButton(
+                title: 'Today',
+                period: AttendancePeriod.today,
+              ),
             ),
-          ),
 
-          IconButton(
-            onPressed: _nextDay,
-            icon: const Icon(Icons.chevron_right_rounded),
-          ),
-        ],
+            const SizedBox(width: 4),
+
+            Expanded(
+              child: _periodButton(
+                title: 'This Week',
+                period: AttendancePeriod.thisWeek,
+              ),
+            ),
+
+            const SizedBox(width: 4),
+
+            Expanded(
+              child: _periodButton(
+                title: 'This Month',
+                period: AttendancePeriod.thisMonth,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+
+  Widget _periodButton({
+    required String title,
+    required AttendancePeriod period,
+  }) {
+    final selected = _selectedPeriod == period;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedPeriod = period;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          title,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            color: selected
+                ? Theme.of(context).colorScheme.primary
+                : const Color(0xFF777777),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // SEARCH
+  // ============================================================
 
   Widget _buildSearchField() {
     return TextField(
@@ -439,6 +579,10 @@ class _AttendancePageState extends State<AttendancePage> {
       ),
     );
   }
+
+  // ============================================================
+  // EMPTY STATE
+  // ============================================================
 
   Widget _buildEmptyState({String message = 'No attendance recorded.'}) {
     return Container(
@@ -468,6 +612,10 @@ class _AttendancePageState extends State<AttendancePage> {
   }
 }
 
+// ================================================================
+// EMPLOYEE ATTENDANCE PAGE
+// ================================================================
+
 class EmployeeAttendancePage extends StatelessWidget {
   final Employee employee;
 
@@ -492,6 +640,17 @@ class _EmployeeAttendanceView extends StatefulWidget {
 class _EmployeeAttendanceViewState extends State<_EmployeeAttendanceView> {
   DateTime selectedDate = DateTime.now();
 
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      context.read<AttendanceBloc>().add(const AttendanceLoaded());
+    });
+  }
+
   String _formatDate(DateTime date) {
     const months = [
       'January',
@@ -508,7 +667,9 @@ class _EmployeeAttendanceViewState extends State<_EmployeeAttendanceView> {
       'December',
     ];
 
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
+    return '${date.day} '
+        '${months[date.month - 1]} '
+        '${date.year}';
   }
 
   bool _sameDay(DateTime a, DateTime b) {
@@ -558,7 +719,9 @@ class _EmployeeAttendanceViewState extends State<_EmployeeAttendanceView> {
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontSize: 18),
                         ),
+
                         const SizedBox(height: 3),
+
                         Text(
                           widget.employee.email,
                           style: Theme.of(context).textTheme.bodyMedium,
@@ -633,6 +796,7 @@ class _EmployeeAttendanceViewState extends State<_EmployeeAttendanceView> {
                   (record) => AttendanceListItem(
                     employeeName: widget.employee.name,
                     attendance: record,
+                    showEmployeeName: true,
                   ),
                 ),
             ],
