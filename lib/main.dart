@@ -8,12 +8,23 @@ import 'authentication/bloc/auth_bloc.dart';
 import 'authentication/bloc/auth_event.dart';
 import 'authentication/repository/firebase_auth_repository.dart';
 
-import 'firebase_options.dart';
-
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await dotenv.load(fileName: '.env');
+
+  await Firebase.initializeApp(
+    options: FirebaseOptions(
+      apiKey: dotenv.env['FIREBASE_API_KEY']!,
+      appId: dotenv.env['FIREBASE_APP_ID']!,
+      messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID']!,
+      projectId: dotenv.env['FIREBASE_PROJECT_ID']!,
+      authDomain: dotenv.env['FIREBASE_AUTH_DOMAIN'],
+      storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'],
+    ),
+  );
+
 
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
