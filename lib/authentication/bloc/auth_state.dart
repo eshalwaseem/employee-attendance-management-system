@@ -22,9 +22,6 @@ class AuthState {
     this.errorMessage,
   });
 
-  // ============================================================
-  // VALIDATION GETTERS
-  // ============================================================
 
   bool get isNameValid {
     return name.trim().length >= 2;
@@ -44,9 +41,7 @@ class AuthState {
     return password.length >= 6;
   }
 
-  // ============================================================
-  // STATUS GETTERS
-  // ============================================================
+
 
   bool get isLoading {
     return status == AuthStatus.loading;
@@ -64,9 +59,7 @@ class AuthState {
     return status == AuthStatus.authenticated && user != null;
   }
 
-  // ============================================================
-  // COPY WITH
-  // ============================================================
+
 
   AuthState copyWith({
     AuthStatus? status,
@@ -88,9 +81,7 @@ class AuthState {
     );
   }
 
-  // ============================================================
-  // DEBUG
-  // ============================================================
+
 
   @override
   String toString() {

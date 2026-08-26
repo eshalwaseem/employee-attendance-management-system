@@ -8,18 +8,8 @@ class FirebaseAuthRepository {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // ============================================================
-  // ONE MANAGER FOR THE WHOLE COMPANY
-  // ============================================================
-  //
-  // Replace this with the Firebase Authentication UID
-  // of your manager.
-  //
   static const String managerId = 'r5mh0r59tWZMMQVHpwa46znfBzp1';
 
-  // ============================================================
-  // SIGN UP
-  // ============================================================
 
   Future<User> signup({
     required String name,
@@ -42,23 +32,16 @@ class FirebaseAuthRepository {
         throw Exception('Unable to create your account.');
       }
 
-      // Save name to Firebase Authentication
       await firebaseUser.updateDisplayName(normalizedName);
 
-      // ========================================================
-      // EVERY SIGNUP IS AN EMPLOYEE
-      // EVERY EMPLOYEE GETS THE SAME MANAGER
-      // ========================================================
 
       final user = User(
         id: firebaseUser.uid,
         name: normalizedName,
         email: normalizedEmail,
 
-        // New accounts are ALWAYS employees
         role: UserRole.employee,
 
-        // Automatically assign the one manager
         managerId: managerId,
 
         permissions: const [
@@ -67,7 +50,6 @@ class FirebaseAuthRepository {
         ],
       );
 
-      // Save user to Firestore
       await _firestore.collection('users').doc(firebaseUser.uid).set({
         ...user.toJson(),
         'createdAt': FieldValue.serverTimestamp(),
@@ -86,9 +68,6 @@ class FirebaseAuthRepository {
     }
   }
 
-  // ============================================================
-  // LOGIN
-  // ============================================================
 
   Future<User> login({required String email, required String password}) async {
     final normalizedEmail = email.trim().toLowerCase();
@@ -117,9 +96,6 @@ class FirebaseAuthRepository {
     }
   }
 
-  // ============================================================
-  // CURRENT USER
-  // ============================================================
 
   Future<User?> getCurrentUser() async {
     final firebaseUser = _auth.currentUser;
@@ -131,17 +107,12 @@ class FirebaseAuthRepository {
     return _getOrCreateFirestoreUser(firebaseUser);
   }
 
-  // ============================================================
-  // LOGOUT
-  // ============================================================
+
 
   Future<void> logout() async {
     await _auth.signOut();
   }
 
-  // ============================================================
-  // GET OR CREATE FIRESTORE USER
-  // ============================================================
 
   Future<User> _getOrCreateFirestoreUser(
     firebase_auth.User firebaseUser,
@@ -155,10 +126,6 @@ class FirebaseAuthRepository {
       return _userFromFirestore(firebaseUser, snapshot.data()!);
     }
 
-    // ==========================================================
-    // IF FIRESTORE PROFILE DOES NOT EXIST
-    // CREATE IT AS AN EMPLOYEE
-    // ==========================================================
 
     final user = User(
       id: firebaseUser.uid,
@@ -184,9 +151,6 @@ class FirebaseAuthRepository {
     return user;
   }
 
-  // ============================================================
-  // FIRESTORE → USER MODEL
-  // ============================================================
 
   User _userFromFirestore(
     firebase_auth.User firebaseUser,
@@ -221,13 +185,6 @@ class FirebaseAuthRepository {
     );
   }
 
-  // ============================================================
-  // ASSIGN AUTHORITY
-  // ============================================================
-  //
-  // Leave this here for future use.
-  // We are NOT using an Employee Management screen right now.
-  //
 
   Future<void> assignAuthority({
     required String employeeId,
@@ -243,9 +200,6 @@ class FirebaseAuthRepository {
     });
   }
 
-  // ============================================================
-  // FIREBASE ERROR MESSAGES
-  // ============================================================
 
   String _firebaseErrorMessage(firebase_auth.FirebaseAuthException error) {
     switch (error.code) {

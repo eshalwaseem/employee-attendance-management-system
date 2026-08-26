@@ -81,9 +81,6 @@ class _SignupPageState extends State<SignupPage>
     super.dispose();
   }
 
-  // ============================================================
-  // SUBMIT
-  // ============================================================
 
   void _submit() {
     FocusManager.instance.primaryFocus?.unfocus();
@@ -92,9 +89,6 @@ class _SignupPageState extends State<SignupPage>
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    // ----------------------------------------------------------
-    // NAME
-    // ----------------------------------------------------------
 
     if (name.length < 2) {
       context.read<AuthBloc>().add(NameChanged(name));
@@ -102,9 +96,7 @@ class _SignupPageState extends State<SignupPage>
       return;
     }
 
-    // ----------------------------------------------------------
-    // EMAIL
-    // ----------------------------------------------------------
+  
 
     if (email.isEmpty) {
       context.read<AuthBloc>().add(const EmailChanged(''));
@@ -112,9 +104,6 @@ class _SignupPageState extends State<SignupPage>
       return;
     }
 
-    // ----------------------------------------------------------
-    // PASSWORD
-    // ----------------------------------------------------------
 
     if (password.isEmpty) {
       context.read<AuthBloc>().add(const PasswordChanged(''));
@@ -131,9 +120,6 @@ class _SignupPageState extends State<SignupPage>
     context.read<AuthBloc>().add(SignupSubmitted(name: name));
   }
 
-  // ============================================================
-  // ANIMATION
-  // ============================================================
 
   Widget _animatedSection({
     required Animation<double> animation,
@@ -152,9 +138,6 @@ class _SignupPageState extends State<SignupPage>
     );
   }
 
-  // ============================================================
-  // LOGIN ROUTE
-  // ============================================================
 
   Route<void> _loginRoute() {
     return PageRouteBuilder<void>(
@@ -182,9 +165,6 @@ class _SignupPageState extends State<SignupPage>
     );
   }
 
-  // ============================================================
-  // BUILD
-  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -192,9 +172,7 @@ class _SignupPageState extends State<SignupPage>
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        // ------------------------------------------------------
-        // SIGNUP SUCCESS
-        // ------------------------------------------------------
+       
 
         if (state.status == AuthStatus.authenticated && state.user != null) {
           Navigator.of(context).pushAndRemoveUntil(
@@ -203,9 +181,6 @@ class _SignupPageState extends State<SignupPage>
           );
         }
 
-        // ------------------------------------------------------
-        // ERROR
-        // ------------------------------------------------------
 
         if (state.status == AuthStatus.failure) {
           ScaffoldMessenger.of(context)

@@ -78,9 +78,7 @@ class _LoginPageState extends State<LoginPage>
     super.dispose();
   }
 
-  // ============================================================
-  // SUBMIT
-  // ============================================================
+
 
   void _submit() {
     FocusManager.instance.primaryFocus?.unfocus();
@@ -107,9 +105,7 @@ class _LoginPageState extends State<LoginPage>
     context.read<AuthBloc>().add(const LoginSubmitted());
   }
 
-  // ============================================================
-  // ANIMATION
-  // ============================================================
+
 
   Widget _animatedSection({
     required Animation<double> animation,
@@ -128,9 +124,6 @@ class _LoginPageState extends State<LoginPage>
     );
   }
 
-  // ============================================================
-  // SIGNUP ROUTE
-  // ============================================================
 
   Route<void> _signupRoute() {
     return PageRouteBuilder<void>(
@@ -158,9 +151,6 @@ class _LoginPageState extends State<LoginPage>
     );
   }
 
-  // ============================================================
-  // BUILD
-  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -168,9 +158,7 @@ class _LoginPageState extends State<LoginPage>
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        // ------------------------------------------------------
-        // LOGIN SUCCESS
-        // ------------------------------------------------------
+        
 
         if (state.status == AuthStatus.authenticated && state.user != null) {
           Navigator.of(context).pushAndRemoveUntil(
@@ -179,9 +167,7 @@ class _LoginPageState extends State<LoginPage>
           );
         }
 
-        // ------------------------------------------------------
-        // ERROR
-        // ------------------------------------------------------
+  
 
         if (state.status == AuthStatus.failure) {
           ScaffoldMessenger.of(context)
@@ -293,7 +279,6 @@ class _LoginPageState extends State<LoginPage>
 
                             const SizedBox(height: 18),
 
-                            // LOGIN BUTTON
                             _animatedSection(
                               animation: _buttonAnimation,
                               child: BlocBuilder<AuthBloc, AuthState>(
