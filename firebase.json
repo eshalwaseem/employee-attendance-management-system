@@ -1,0 +1,33 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "employee-attendance-syst-a7158",
+          "appId": "1:748897435275:android:00f28eb2b6c24e6ccfde8e",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "employee-attendance-syst-a7158",
+          "configurations": {
+            "android": "1:748897435275:android:00f28eb2b6c24e6ccfde8e",
+            "ios": "1:748897435275:ios:1e9d65168529cac4cfde8e",
+            "macos": "1:748897435275:ios:1e9d65168529cac4cfde8e",
+            "web": "1:748897435275:web:edc9af1efdefc9ebcfde8e",
+            "windows": "1:748897435275:web:a2f043fef14a608acfde8e"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}
