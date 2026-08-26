@@ -24,7 +24,6 @@ class _SwipeCheckButtonState extends State<SwipeCheckButton> {
   void didUpdateWidget(covariant SwipeCheckButton oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Reset everything once attendance has successfully been recorded.
     if (widget.isCheckedIn && !oldWidget.isCheckedIn) {
       setState(() {
         _dragPosition = 0;
@@ -32,7 +31,6 @@ class _SwipeCheckButtonState extends State<SwipeCheckButton> {
       });
     }
 
-    // Allow another attempt if the parent still says not checked in.
     if (!widget.isCheckedIn && oldWidget.isCheckedIn) {
       setState(() {
         _dragPosition = 0;

@@ -68,27 +68,20 @@ class _DashboardPageState extends State<DashboardPage> {
 
             return BlocBuilder<AttendanceBloc, AttendanceState>(
               builder: (context, attendanceState) {
-                // ==================================================
-                // LOADING
-                // ==================================================
+                
                 if (attendanceState.status == AttendanceStatusState.loading) {
                   return const Center(
                     child: CircularProgressIndicator(color: AppColors.primary),
                   );
                 }
 
-                // ==================================================
-                // GET CURRENT USER'S RECORDS
-                // ==================================================
                 final records = employeeId == null
                     ? <Attendance>[]
                     : attendanceState.records
                           .where((record) => record.employeeId == employeeId)
                           .toList();
 
-                // ==================================================
-                // TODAY
-                // ==================================================
+                
                 final todayRecords = records.where(_isToday).toList();
 
                 final todayAttendance = todayRecords.isEmpty
@@ -99,9 +92,6 @@ class _DashboardPageState extends State<DashboardPage> {
 
                 final checkInTime = todayAttendance?.checkIn;
 
-                // ==================================================
-                // ATTENDANCE SUMMARY
-                // ==================================================
                 final presentDays = records
                     .where(
                       (record) => record.status == AttendanceStatus.present,
@@ -112,8 +102,6 @@ class _DashboardPageState extends State<DashboardPage> {
                     .where((record) => record.status == AttendanceStatus.late)
                     .length;
 
-                // Currently you don't have absent records
-                // being created, so this remains zero.
                 const absentDays = 0;
 
                 return RefreshIndicator(
@@ -141,9 +129,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
 
                       children: [
-                        // =========================================
-                        // HEADER
-                        // =========================================
+                      
                         Row(
                           children: [
                             Expanded(
@@ -192,9 +178,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
                         const SizedBox(height: 30),
 
-                        // =========================================
-                        // TODAY'S STATUS
-                        // =========================================
+                      
                         const Text(
                           "Today's Status",
                           style: TextStyle(
@@ -230,9 +214,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
                         const SizedBox(height: 30),
 
-                        // =========================================
-                        // SHOW ATTENDANCE ERROR
-                        // =========================================
+                      
                         if (attendanceState.hasError &&
                             attendanceState.errorMessage != null)
                           Container(
@@ -269,9 +251,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                           ),
 
-                        // =========================================
-                        // ATTENDANCE OVERVIEW
-                        // =========================================
+                      
                         const Text(
                           'Attendance Overview',
                           style: TextStyle(
@@ -291,9 +271,6 @@ class _DashboardPageState extends State<DashboardPage> {
 
                         const SizedBox(height: 30),
 
-                        // =========================================
-                        // RECENT ATTENDANCE
-                        // =========================================
                         const Text(
                           'Recent Attendance',
                           style: TextStyle(
@@ -321,9 +298,7 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  // ============================================================
-  // CHECK IF ATTENDANCE IS TODAY
-  // ============================================================
+
   bool _isToday(Attendance attendance) {
     final now = DateTime.now();
 
@@ -332,9 +307,6 @@ class _DashboardPageState extends State<DashboardPage> {
         attendance.date.day == now.day;
   }
 
-  // ============================================================
-  // RECENT ATTENDANCE
-  // ============================================================
   List<Widget> _buildRecentAttendance(
     BuildContext context,
     List<Attendance> records,
@@ -351,9 +323,6 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 }
 
-// ================================================================
-// RECENT ATTENDANCE CARD
-// ================================================================
 
 class _RecentAttendanceCard extends StatelessWidget {
   final Attendance attendance;
@@ -465,9 +434,6 @@ class _RecentAttendanceCard extends StatelessWidget {
   }
 }
 
-// ================================================================
-// EMPTY ATTENDANCE
-// ================================================================
 
 class _EmptyAttendance extends StatelessWidget {
   const _EmptyAttendance();
