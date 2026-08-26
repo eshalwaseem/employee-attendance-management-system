@@ -1,105 +1,155 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../repository/employee_repository.dart';
 import '../models/employee.dart';
 import 'employee_event.dart';
 import 'employee_state.dart';
 
 class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
-  EmployeeBloc() : super(const EmployeeState()) {
+  final EmployeeRepository _repository;
+  final FirebaseAuth _auth;
+
+  EmployeeBloc({required EmployeeRepository repository, FirebaseAuth? auth})
+    : _repository = repository,
+      _auth = auth ?? FirebaseAuth.instance,
+      super(const EmployeeState()) {
     on<EmployeesLoaded>(_onEmployeesLoaded);
+    on<EmployeesReloadRequested>(_onEmployeesReloadRequested);
+
+    on<EmployeeLoaded>(_onEmployeeLoaded);
+    on<EmployeeCleared>(_onEmployeeCleared);
+
     on<EmployeeSelected>(_onEmployeeSelected);
     on<EmployeeSelectionCleared>(_onEmployeeSelectionCleared);
-        on<EmployeeRegistered>(_onEmployeeRegistered);
 
+    on<EmployeeRegistered>(_onEmployeeRegistered);
+
+    on<EmployeeAuthorityAssigned>(_onEmployeeAuthorityAssigned);
+
+    on<EmployeeManagerAssigned>(_onEmployeeManagerAssigned);
+
+    on<EmployeeManagerRemoved>(_onEmployeeManagerRemoved);
+
+    on<EmployeeDeleted>(_onEmployeeDeleted);
   }
+
+  // ============================================================
+  // LOAD ALL EMPLOYEES
+  // ============================================================
 
   Future<void> _onEmployeesLoaded(
     EmployeesLoaded event,
     Emitter<EmployeeState> emit,
   ) async {
+    await _loadEmployees(emit);
+  }
+
+  // ============================================================
+  // RELOAD
+  // ============================================================
+
+  Future<void> _onEmployeesReloadRequested(
+    EmployeesReloadRequested event,
+    Emitter<EmployeeState> emit,
+  ) async {
+    await _loadEmployees(emit);
+  }
+
+  Future<void> _loadEmployees(Emitter<EmployeeState> emit) async {
     emit(state.copyWith(status: EmployeeStatus.loading, clearError: true));
 
     try {
-      
+      final firebaseUser = _auth.currentUser;
 
-      const employees = [
-        Employee(
-          id: '001',
-          name: 'Team Lead',
-          email: 'lead@company.com',
-          managerId: null,
-        ),
+      if (firebaseUser == null) {
+        throw Exception('You must be signed in.');
+      }
 
-        Employee(
-          id: '002',
-          name: 'Employee A',
-          email: 'employee.a@company.com',
-          managerId: '001',
-        ),
+      final employees = await _repository.getEmployees(firebaseUser.uid);
 
-        Employee(
-          id: '003',
-          name: 'Employee B',
-          email: 'employee.b@company.com',
-          managerId: '001',
-        ),
+      String? selectedId = state.selectedEmployeeId;
 
-        Employee(
-          id: '004',
-          name: 'Sara Khan',
-          email: 'sara@company.com',
-          managerId: '002',
-        ),
-
-        Employee(
-          id: '005',
-          name: 'Ali Raza',
-          email: 'ali@company.com',
-          managerId: '002',
-        ),
-
-        Employee(
-          id: '006',
-          name: 'Hamza Ahmed',
-          email: 'hamza@company.com',
-          managerId: '003',
-        ),
-
-        Employee(
-          id: '007',
-          name: 'Iqra Siddiqui',
-          email: 'iqra@company.com',
-          managerId: '003',
-        ),
-      ];
-
-      await Future<void>.delayed(const Duration(milliseconds: 300));
+      if (selectedId != null &&
+          !employees.any((employee) => employee.id == selectedId)) {
+        selectedId = null;
+      }
 
       emit(
-        state.copyWith(
+        EmployeeState(
           status: EmployeeStatus.success,
           employees: employees,
-          clearError: true,
+          selectedEmployeeId: selectedId,
         ),
       );
-    } catch (error) {
+    } catch (error, stackTrace) {
       emit(
         state.copyWith(
           status: EmployeeStatus.failure,
-          errorMessage: 'Unable to load employees.',
+          errorMessage: _cleanError(error),
         ),
       );
 
-      addError(error, StackTrace.current);
+      addError(error, stackTrace);
     }
   }
+  // ============================================================
+  // CURRENT EMPLOYEE LOADED
+  // ============================================================
+
+  void _onEmployeeLoaded(EmployeeLoaded event, Emitter<EmployeeState> emit) {
+    final employees = [...state.employees];
+
+    final existingIndex = employees.indexWhere(
+      (employee) => employee.id == event.employee.id,
+    );
+
+    if (existingIndex == -1) {
+      employees.add(event.employee);
+    } else {
+      employees[existingIndex] = event.employee;
+    }
+
+    emit(
+      state.copyWith(
+        status: EmployeeStatus.success,
+        employees: employees,
+        selectedEmployeeId: event.employee.id,
+        clearError: true,
+      ),
+    );
+  }
+
+  // ============================================================
+  // CLEAR
+  // ============================================================
+
+  void _onEmployeeCleared(EmployeeCleared event, Emitter<EmployeeState> emit) {
+    emit(const EmployeeState());
+  }
+
+  // ============================================================
+  // SELECT
+  // ============================================================
 
   void _onEmployeeSelected(
     EmployeeSelected event,
     Emitter<EmployeeState> emit,
   ) {
+    final exists = state.employees.any(
+      (employee) => employee.id == event.employeeId,
+    );
+
+    if (!exists) {
+      return;
+    }
+
     emit(state.copyWith(selectedEmployeeId: event.employeeId));
   }
+
+  // ============================================================
+  // CLEAR SELECTION
+  // ============================================================
 
   void _onEmployeeSelectionCleared(
     EmployeeSelectionCleared event,
@@ -107,6 +157,11 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
   ) {
     emit(state.copyWith(clearSelection: true));
   }
+
+  // ============================================================
+  // REGISTERED
+  // ============================================================
+
   void _onEmployeeRegistered(
     EmployeeRegistered event,
     Emitter<EmployeeState> emit,
@@ -123,53 +178,291 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       employees.add(event.employee);
     }
 
-    emit(state.copyWith(employees: employees));
+    emit(
+      state.copyWith(
+        status: EmployeeStatus.success,
+        employees: employees,
+        selectedEmployeeId: event.employee.id,
+        clearError: true,
+      ),
+    );
   }
-  List<Employee> getDirectReports(String managerId) {
-    return state.employees
-        .where((employee) => employee.managerId == managerId)
-        .toList();
-  }
 
-  
-  List<Employee> getAllReports(String managerId) {
-    final result = <Employee>[];
+  // ============================================================
+  // ASSIGN AUTHORITY
+  // ============================================================
 
-    void findReports(String currentManagerId) {
-      final directReports = getDirectReports(currentManagerId);
+  Future<void> _onEmployeeAuthorityAssigned(
+    EmployeeAuthorityAssigned event,
+    Emitter<EmployeeState> emit,
+  ) async {
+    final firebaseUser = _auth.currentUser;
 
-      for (final employee in directReports) {
-        result.add(employee);
-        findReports(employee.id);
-      }
+    if (firebaseUser == null) {
+      emit(
+        state.copyWith(
+          status: EmployeeStatus.failure,
+          errorMessage: 'You must be signed in to assign a role.',
+        ),
+      );
+      return;
     }
 
-    findReports(managerId);
+    final actingEmployee = state.getById(firebaseUser.uid);
+
+    if (actingEmployee == null || !actingEmployee.isAdmin) {
+      emit(
+        state.copyWith(
+          status: EmployeeStatus.failure,
+          errorMessage: 'Only an admin can assign roles.',
+        ),
+      );
+      return;
+    }
+
+    emit(state.copyWith(status: EmployeeStatus.loading, clearError: true));
+
+    try {
+      final updatedEmployee = await _repository.assignAuthority(
+        employeeId: event.employeeId,
+        role: event.role,
+        managerId: event.managerId,
+        permissions: event.permissions,
+      );
+
+      final employees = _replaceEmployee(state.employees, updatedEmployee);
+
+      emit(
+        state.copyWith(
+          status: EmployeeStatus.success,
+          employees: employees,
+          selectedEmployeeId: updatedEmployee.id,
+          clearError: true,
+        ),
+      );
+    } catch (error, stackTrace) {
+      emit(
+        state.copyWith(
+          status: EmployeeStatus.failure,
+          errorMessage: _cleanError(error),
+        ),
+      );
+
+      addError(error, stackTrace);
+    }
+  }
+
+  // ============================================================
+  // ASSIGN MANAGER
+  // ============================================================
+
+  Future<void> _onEmployeeManagerAssigned(
+    EmployeeManagerAssigned event,
+    Emitter<EmployeeState> emit,
+  ) async {
+    final firebaseUser = _auth.currentUser;
+
+    if (firebaseUser == null) {
+      emit(
+        state.copyWith(
+          status: EmployeeStatus.failure,
+          errorMessage: 'You must be signed in to assign a manager.',
+        ),
+      );
+      return;
+    }
+
+    final actingEmployee = state.getById(firebaseUser.uid);
+
+    if (actingEmployee == null || !actingEmployee.isAdmin) {
+      emit(
+        state.copyWith(
+          status: EmployeeStatus.failure,
+          errorMessage: 'Only an admin can assign a manager.',
+        ),
+      );
+      return;
+    }
+
+    emit(state.copyWith(status: EmployeeStatus.loading, clearError: true));
+
+    try {
+      final updatedEmployee = await _repository.assignManager(
+        employeeId: event.employeeId,
+        managerId: event.managerId,
+      );
+
+      final employees = _replaceEmployee(state.employees, updatedEmployee);
+
+      emit(
+        state.copyWith(
+          status: EmployeeStatus.success,
+          employees: employees,
+          selectedEmployeeId: updatedEmployee.id,
+          clearError: true,
+        ),
+      );
+    } catch (error, stackTrace) {
+      emit(
+        state.copyWith(
+          status: EmployeeStatus.failure,
+          errorMessage: _cleanError(error),
+        ),
+      );
+
+      addError(error, stackTrace);
+    }
+  }
+
+  // ============================================================
+  // REMOVE MANAGER
+  // ============================================================
+
+  Future<void> _onEmployeeManagerRemoved(
+    EmployeeManagerRemoved event,
+    Emitter<EmployeeState> emit,
+  ) async {
+    final firebaseUser = _auth.currentUser;
+
+    if (firebaseUser == null) {
+      emit(
+        state.copyWith(
+          status: EmployeeStatus.failure,
+          errorMessage: 'You must be signed in to remove a manager.',
+        ),
+      );
+      return;
+    }
+
+    final actingEmployee = state.getById(firebaseUser.uid);
+
+    final target = state.getById(event.employeeId);
+
+    if (target == null) {
+      emit(
+        state.copyWith(
+          status: EmployeeStatus.failure,
+          errorMessage: 'Employee not found.',
+        ),
+      );
+      return;
+    }
+
+    final isAdmin = actingEmployee?.isAdmin ?? false;
+
+    final isSelfManaged =
+        actingEmployee != null && target.managerId == actingEmployee.id;
+
+    if (!isAdmin && !isSelfManaged) {
+      emit(
+        state.copyWith(
+          status: EmployeeStatus.failure,
+          errorMessage: 'You do not have permission to remove this manager.',
+        ),
+      );
+      return;
+    }
+
+    emit(state.copyWith(status: EmployeeStatus.loading, clearError: true));
+
+    try {
+      final updatedEmployee = await _repository.removeManager(event.employeeId);
+
+      final employees = _replaceEmployee(state.employees, updatedEmployee);
+
+      emit(
+        state.copyWith(
+          status: EmployeeStatus.success,
+          employees: employees,
+          selectedEmployeeId: updatedEmployee.id,
+          clearError: true,
+        ),
+      );
+    } catch (error, stackTrace) {
+      emit(
+        state.copyWith(
+          status: EmployeeStatus.failure,
+          errorMessage: _cleanError(error),
+        ),
+      );
+
+      addError(error, stackTrace);
+    }
+  }
+
+  // ============================================================
+  // DELETE
+  // ============================================================
+
+  Future<void> _onEmployeeDeleted(
+    EmployeeDeleted event,
+    Emitter<EmployeeState> emit,
+  ) async {
+    emit(state.copyWith(status: EmployeeStatus.loading, clearError: true));
+
+    try {
+      await _repository.deleteEmployeeProfile(event.employeeId);
+
+      final employees = state.employees
+          .where((employee) => employee.id != event.employeeId)
+          .toList();
+
+      final clearSelection = state.selectedEmployeeId == event.employeeId;
+
+      emit(
+        state.copyWith(
+          status: EmployeeStatus.success,
+          employees: employees,
+          clearSelection: clearSelection,
+          clearError: true,
+        ),
+      );
+    } catch (error, stackTrace) {
+      emit(
+        state.copyWith(
+          status: EmployeeStatus.failure,
+          errorMessage: _cleanError(error),
+        ),
+      );
+
+      addError(error, stackTrace);
+    }
+  }
+
+  // ============================================================
+  // REPLACE EMPLOYEE
+  // ============================================================
+
+  List<Employee> _replaceEmployee(
+    List<Employee> employees,
+    Employee updatedEmployee,
+  ) {
+    final result = [...employees];
+
+    final index = result.indexWhere(
+      (employee) => employee.id == updatedEmployee.id,
+    );
+
+    if (index == -1) {
+      result.add(updatedEmployee);
+    } else {
+      result[index] = updatedEmployee;
+    }
 
     return result;
   }
 
-  
-  List<Employee> getAccessibleEmployees(String employeeId) {
-    final currentEmployee = state.employees.cast<Employee?>().firstWhere(
-      (employee) => employee?.id == employeeId,
-      orElse: () => null,
-    );
+  // ============================================================
+  // CLEAN ERROR
+  // ============================================================
 
-    if (currentEmployee == null) {
-      return [];
+  String _cleanError(Object error) {
+    final message = error.toString();
+
+    if (message.startsWith('Exception: ')) {
+      return message.substring('Exception: '.length);
     }
 
-    return getAllReports(currentEmployee.id);
-  }
-
-  bool canViewEmployee({required String viewerId, required String targetId}) {
-    if (viewerId == targetId) {
-      return true;
-    }
-
-    final accessibleEmployees = getAccessibleEmployees(viewerId);
-
-    return accessibleEmployees.any((employee) => employee.id == targetId);
+    return message;
   }
 }
