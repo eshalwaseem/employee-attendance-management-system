@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'attendance/bloc/attendance_bloc.dart';
-import 'attendance/repository/local_attendance_repository.dart';
+import 'attendance/bloc/attendance_event.dart';
+import 'attendance/repository/attendance_repository.dart';
+
 import 'authentication/bloc/auth_bloc.dart';
-import 'authentication/repository/local_auth_repository.dart';
+import 'authentication/bloc/auth_event.dart';
+import 'authentication/bloc/auth_state.dart';
+import 'authentication/repository/firebase_auth_repository.dart';
 
 import 'employees/bloc/employee_bloc.dart';
 import 'employees/bloc/employee_event.dart';
+import 'employees/repository/employee_repository.dart';
 
 import 'splash/view/view.dart';
 
@@ -27,7 +33,6 @@ class AppColors {
   static const Color error = Color(0xFFD32F2F);
 
   static const Color border = Color(0xFFE5E5E5);
-
   static const Color white = Colors.white;
 }
 
@@ -82,22 +87,27 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
+
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 18,
           vertical: 17,
         ),
+
         hintStyle: const TextStyle(
           color: AppColors.secondaryText,
           fontSize: 15,
         ),
+
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
         ),
+
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppColors.border),
         ),
+
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
@@ -114,24 +124,74 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
+        // ========================================================
+        // AUTH
+        // ========================================================
+
         BlocProvider<AuthBloc>(
-          create: (_) => AuthBloc(repository: LocalAuthRepository()),
-        ),
-
-        BlocProvider<EmployeeBloc>(
-          create: (_) => EmployeeBloc()..add(const EmployeesLoaded()),
-        ),
-
-        BlocProvider<AttendanceBloc>(
           create: (_) =>
-              AttendanceBloc(repository: LocalAttendanceRepository()),
+              AuthBloc(repository: FirebaseAuthRepository())
+                ..add(const AuthSessionRequested()),
+        ),
+
+        // ========================================================
+        // EMPLOYEES
+        //
+        // IMPORTANT:
+        // Do NOT load employees here.
+        // Auth must finish first.
+        // ========================================================
+        BlocProvider<EmployeeBloc>(
+          create: (_) => EmployeeBloc(repository: EmployeeRepository()),
+        ),
+
+        // ========================================================
+        // ATTENDANCE
+        //
+        // IMPORTANT:
+        // Do NOT load attendance here.
+        // Auth must finish first.
+        // ========================================================
+        BlocProvider<AttendanceBloc>(
+          create: (_) => AttendanceBloc(repository: AttendanceRepository()),
         ),
       ],
-      child: MaterialApp(
-        title: 'Employee Attendance',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        home: const SplashPage(),
+
+      // ==========================================================
+      // LISTEN TO AUTH
+      // ==========================================================
+      child: BlocListener<AuthBloc, AuthState>(
+        listener: (context, authState) {
+          final user = authState.user;
+
+          // ------------------------------------------------------
+          // USER IS LOGGED IN
+          // ------------------------------------------------------
+
+          if (user != null) {
+            print('======================================');
+            print('USER AUTHENTICATED');
+            print('User ID: ${user.id}');
+            print('User Name: ${user.name}');
+            print('Role: ${user.role.value}');
+            print('======================================');
+
+            // Now FirebaseAuth.currentUser is available.
+            //
+            // Load employees.
+            context.read<EmployeeBloc>().add(const EmployeesLoaded());
+
+            // Load attendance.
+            context.read<AttendanceBloc>().add(const AttendanceLoaded());
+          }
+        },
+
+        child: MaterialApp(
+          title: 'Employee Attendance',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light,
+          home: const SplashPage(),
+        ),
       ),
     );
   }

@@ -30,7 +30,7 @@ environment:
 dependencies:
   bloc: ^9.0.0
   bloc_concurrency: ^0.3.0
-  equatable: ^2.1.0-dev.0
+  equatable: ^2.1.0
   flutter:
     sdk: flutter
   flutter_bloc: ^9.1.0
@@ -39,18 +39,16 @@ dependencies:
   rive: ^0.13.20
   firebase_core: ^4.13.0
   shared_preferences: ^2.5.5
+  firebase_auth: ^6.5.7
+  cloud_firestore: ^6.8.0
+  bloc_test: ^10.0.0
+  mocktail: ^1.0.5
+  image_picker: ^1.1.2
 
 dev_dependencies:
   bloc_lint: ^0.3.0
-  bloc_test: ^10.0.0
   flutter_test:
     sdk: flutter
-  mocktail: ^1.0.0
-
-# For information on the generic Dart part of this file, see the
-# following page: https://dart.dev/tools/pub/pubspec
-
-# The following section is specific to Flutter packages.
 flutter:
 
   # The following line ensures that the Material Icons font is
