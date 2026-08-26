@@ -4,6 +4,8 @@ workflows:
 
     environment:
       flutter: stable
+      groups:
+        - firebase
 
     scripts:
 
