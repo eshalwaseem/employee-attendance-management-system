@@ -18,6 +18,28 @@ class SwipeCheckButton extends StatefulWidget {
 
 class _SwipeCheckButtonState extends State<SwipeCheckButton> {
   double _dragPosition = 0;
+  bool _isSubmitting = false;
+
+  @override
+  void didUpdateWidget(covariant SwipeCheckButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Reset everything once attendance has successfully been recorded.
+    if (widget.isCheckedIn && !oldWidget.isCheckedIn) {
+      setState(() {
+        _dragPosition = 0;
+        _isSubmitting = false;
+      });
+    }
+
+    // Allow another attempt if the parent still says not checked in.
+    if (!widget.isCheckedIn && oldWidget.isCheckedIn) {
+      setState(() {
+        _dragPosition = 0;
+        _isSubmitting = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +73,7 @@ class _SwipeCheckButtonState extends State<SwipeCheckButton> {
       builder: (context, constraints) {
         const double buttonSize = 50;
 
-        final maxPosition = constraints.maxWidth - buttonSize - 8;
+        final double maxPosition = constraints.maxWidth - buttonSize - 12;
 
         return Container(
           height: 62,
@@ -60,6 +82,7 @@ class _SwipeCheckButtonState extends State<SwipeCheckButton> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.border),
           ),
           child: Stack(
             children: [
@@ -74,45 +97,70 @@ class _SwipeCheckButtonState extends State<SwipeCheckButton> {
                 ),
               ),
 
-              Positioned(
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 100),
                 left: _dragPosition,
                 top: 0,
                 child: GestureDetector(
-                  onHorizontalDragUpdate: (details) {
-                    setState(() {
-                      _dragPosition += details.delta.dx;
+                  onHorizontalDragUpdate: _isSubmitting
+                      ? null
+                      : (details) {
+                          setState(() {
+                            _dragPosition += details.delta.dx;
 
-                      if (_dragPosition < 0) {
-                        _dragPosition = 0;
-                      }
+                            if (_dragPosition < 0) {
+                              _dragPosition = 0;
+                            }
 
-                      if (_dragPosition > maxPosition) {
-                        _dragPosition = maxPosition;
-                      }
-                    });
-                  },
+                            if (_dragPosition > maxPosition) {
+                              _dragPosition = maxPosition;
+                            }
+                          });
+                        },
 
-                  onHorizontalDragEnd: (_) {
-                    if (_dragPosition >= maxPosition * 0.8) {
-                      widget.onCheckIn?.call();
-                    } else {
-                      setState(() {
-                        _dragPosition = 0;
-                      });
-                    }
-                  },
+                  onHorizontalDragEnd: _isSubmitting
+                      ? null
+                      : (_) {
+                          final bool completed =
+                              _dragPosition >= maxPosition * 0.8;
+
+                          if (completed) {
+                            setState(() {
+                              _dragPosition = maxPosition;
+                              _isSubmitting = true;
+                            });
+
+                            // THIS triggers AttendanceBloc.
+                            widget.onCheckIn?.call();
+                          } else {
+                            setState(() {
+                              _dragPosition = 0;
+                            });
+                          }
+                        },
 
                   child: Container(
                     height: buttonSize,
                     width: buttonSize,
                     decoration: BoxDecoration(
-                      color: AppColors.primary,
+                      color: _isSubmitting
+                          ? AppColors.secondaryText
+                          : AppColors.primary,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(
-                      Icons.arrow_forward_rounded,
-                      color: Colors.white,
-                    ),
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.arrow_forward_rounded,
+                            color: Colors.white,
+                          ),
                   ),
                 ),
               ),

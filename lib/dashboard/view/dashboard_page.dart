@@ -2,21 +2,35 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../app.dart';
-
 import '../../authentication/bloc/auth_bloc.dart';
 import '../../authentication/bloc/auth_state.dart';
-
 import '../../attendance/bloc/attendance_bloc.dart';
 import '../../attendance/bloc/attendance_event.dart';
 import '../../attendance/bloc/attendance_state.dart';
 import '../../attendance/models/attendance.dart';
-import '../../attendance/repository/local_attendance_repository.dart';
-import '../../attendance/view/attendance_page.dart';
-
+import '../../shared/widgets/app_bottom_navigation.dart';
 import '../widgets/widgets.dart';
 
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
+
+  @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  @override
+  void initState() {
+    super.initState();
+
+    // Load attendance from Firestore whenever
+    // the dashboard is opened.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      context.read<AttendanceBloc>().add(const AttendanceLoaded());
+    });
+  }
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -34,244 +48,282 @@ class DashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) =>
-          AttendanceBloc(repository: LocalAttendanceRepository())
-            ..add(const AttendanceLoaded()),
-      child: Builder(
-        builder: (context) {
-          final attendanceBloc = context.read<AttendanceBloc>();
+    return Scaffold(
+      backgroundColor: AppColors.background,
 
-          return Scaffold(
-            backgroundColor: AppColors.background,
-            bottomNavigationBar: _BottomNavigation(
-              onDestinationSelected: (index) {
-                if (index == 1) {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => BlocProvider.value(
-                        value: attendanceBloc,
-                        child: const AttendancePage(),
-                      ),
-                    ),
+      bottomNavigationBar: const AppBottomNavigation(selectedIndex: 0),
+
+      body: SafeArea(
+        child: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, authState) {
+            final user = authState.user;
+
+            final userName = user?.name.isNotEmpty == true
+                ? user!.name
+                : authState.name.isNotEmpty
+                ? authState.name
+                : 'Employee';
+
+            final employeeId = user?.id;
+
+            return BlocBuilder<AttendanceBloc, AttendanceState>(
+              builder: (context, attendanceState) {
+                // ==================================================
+                // LOADING
+                // ==================================================
+                if (attendanceState.status == AttendanceStatusState.loading) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
                   );
                 }
-                
-              },
-            ),
-            body: SafeArea(
-              child: BlocBuilder<AuthBloc, AuthState>(
-                builder: (context, authState) {
-                  final user = authState.user;
 
-                  final userName = user?.name.isNotEmpty == true
-                      ? user!.name
-                      : authState.name.isNotEmpty
-                      ? authState.name
-                      : 'Employee';
+                // ==================================================
+                // GET CURRENT USER'S RECORDS
+                // ==================================================
+                final records = employeeId == null
+                    ? <Attendance>[]
+                    : attendanceState.records
+                          .where((record) => record.employeeId == employeeId)
+                          .toList();
 
-                  final employeeId = user?.id;
+                // ==================================================
+                // TODAY
+                // ==================================================
+                final todayRecords = records.where(_isToday).toList();
 
-                  return BlocBuilder<AttendanceBloc, AttendanceState>(
-                    builder: (context, attendanceState) {
-                      if (attendanceState.status ==
-                          AttendanceStatusState.loading) {
-                        return const Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.primary,
-                          ),
-                        );
-                      }
+                final todayAttendance = todayRecords.isEmpty
+                    ? null
+                    : todayRecords.first;
 
-                      final records = employeeId == null
-                          ? <Attendance>[]
-                          : attendanceState.records
-                                .where(
-                                  (record) => record.employeeId == employeeId,
-                                )
-                                .toList();
+                final isCheckedIn = todayAttendance != null;
 
-                      final todayRecords = records.where(_isToday).toList();
+                final checkInTime = todayAttendance?.checkIn;
 
-                      final todayAttendance = todayRecords.isEmpty
-                          ? null
-                          : todayRecords.first;
+                // ==================================================
+                // ATTENDANCE SUMMARY
+                // ==================================================
+                final presentDays = records
+                    .where(
+                      (record) => record.status == AttendanceStatus.present,
+                    )
+                    .length;
 
-                      final isCheckedIn = todayAttendance != null;
+                final lateDays = records
+                    .where((record) => record.status == AttendanceStatus.late)
+                    .length;
 
-                      final checkInTime = todayAttendance?.checkIn;
+                // Currently you don't have absent records
+                // being created, so this remains zero.
+                const absentDays = 0;
 
-                      final presentDays = records
-                          .where(
-                            (record) =>
-                                record.status == AttendanceStatus.present,
-                          )
-                          .length;
+                return RefreshIndicator(
+                  color: AppColors.primary,
 
-                      final lateDays = records
-                          .where(
-                            (record) => record.status == AttendanceStatus.late,
-                          )
-                          .length;
+                  onRefresh: () async {
+                    final bloc = context.read<AttendanceBloc>();
 
-                      
-                      const absentDays = 0;
+                    bloc.add(const AttendanceLoaded());
 
-                      return RefreshIndicator(
-                        color: AppColors.primary,
-                        onRefresh: () async {
-                          context.read<AttendanceBloc>().add(
-                            const AttendanceLoaded(),
-                          );
-                        },
-                        child: SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              
+                    // Wait until Firestore loading finishes.
+                    await bloc.stream.firstWhere(
+                      (state) =>
+                          state.status == AttendanceStatusState.success ||
+                          state.status == AttendanceStatusState.failure,
+                    );
+                  },
 
-                              Row(
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
+
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+
+                      children: [
+                        // =========================================
+                        // HEADER
+                        // =========================================
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          _getGreeting(),
-                                          style: const TextStyle(
-                                            color: AppColors.secondaryText,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-
-                                        const SizedBox(height: 4),
-
-                                        Text(
-                                          userName,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            color: AppColors.text,
-                                            fontSize: 22,
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                        ),
-                                      ],
+                                  Text(
+                                    _getGreeting(),
+                                    style: const TextStyle(
+                                      color: AppColors.secondaryText,
+                                      fontSize: 14,
                                     ),
                                   ),
 
-                                  Container(
-                                    height: 48,
-                                    width: 48,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primaryLight,
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    child: const Icon(
-                                      Icons.person_rounded,
-                                      color: AppColors.primary,
-                                      size: 26,
+                                  const SizedBox(height: 4),
+
+                                  Text(
+                                    userName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: AppColors.text,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w800,
                                     ),
                                   ),
                                 ],
                               ),
+                            ),
 
-                              const SizedBox(height: 30),
-
-                              
-                              const Text(
-                                "Today's Status",
-                                style: TextStyle(
-                                  fontSize: 21,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.text,
-                                ),
+                            Container(
+                              height: 48,
+                              width: 48,
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryLight,
+                                borderRadius: BorderRadius.circular(16),
                               ),
-
-                              const SizedBox(height: 14),
-
-                              CheckInCard(
-                                isCheckedIn: isCheckedIn,
-                                checkInTime: checkInTime == null
-                                    ? null
-                                    : TimeOfDay.fromDateTime(checkInTime)
-                                          .format(context),
+                              child: const Icon(
+                                Icons.person_rounded,
+                                color: AppColors.primary,
+                                size: 26,
                               ),
+                            ),
+                          ],
+                        ),
 
-                              const SizedBox(height: 14),
+                        const SizedBox(height: 30),
 
-                              SwipeCheckButton(
-                                isCheckedIn: isCheckedIn,
-                                onCheckIn: employeeId == null || isCheckedIn
-                                    ? null
-                                    : () {
-                                        context.read<AttendanceBloc>().add(
-                                          CheckInRequested(
-                                            employeeId: employeeId,
-                                          ),
-                                        );
-                                      },
-                              ),
-
-                              const SizedBox(height: 30),
-
-                         
-                              const Text(
-                                'Attendance Overview',
-                                style: TextStyle(
-                                  fontSize: 21,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.text,
-                                ),
-                              ),
-
-                              const SizedBox(height: 14),
-
-                              AttendanceSummary(
-                                present: presentDays,
-                                absent: absentDays,
-                                late: lateDays,
-                              ),
-
-                              const SizedBox(height: 30),
-
-                              // =========================================
-                              // RECENT ATTENDANCE
-                              // =========================================
-                              const Text(
-                                'Recent Attendance',
-                                style: TextStyle(
-                                  fontSize: 21,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.text,
-                                ),
-                              ),
-
-                              const SizedBox(height: 14),
-
-                              if (records.isEmpty)
-                                _EmptyAttendance()
-                              else
-                                ..._buildRecentAttendance(context, records),
-                            ],
+                        // =========================================
+                        // TODAY'S STATUS
+                        // =========================================
+                        const Text(
+                          "Today's Status",
+                          style: TextStyle(
+                            fontSize: 21,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.text,
                           ),
                         ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          );
-        },
+
+                        const SizedBox(height: 14),
+
+                        CheckInCard(
+                          isCheckedIn: isCheckedIn,
+                          checkInTime: checkInTime == null
+                              ? null
+                              : TimeOfDay.fromDateTime(checkInTime)
+                                    .format(context),
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        SwipeCheckButton(
+                          isCheckedIn: isCheckedIn,
+
+                          onCheckIn: employeeId == null || isCheckedIn
+                              ? null
+                              : () {
+                                  context.read<AttendanceBloc>().add(
+                                    CheckInRequested(employeeId: employeeId),
+                                  );
+                                },
+                        ),
+
+                        const SizedBox(height: 30),
+
+                        // =========================================
+                        // SHOW ATTENDANCE ERROR
+                        // =========================================
+                        if (attendanceState.hasError &&
+                            attendanceState.errorMessage != null)
+                          Container(
+                            width: double.infinity,
+                            margin: const EdgeInsets.only(bottom: 20),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: AppColors.error.withValues(alpha: 0.25),
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(
+                                  Icons.error_outline_rounded,
+                                  color: AppColors.error,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    attendanceState.errorMessage!,
+                                    style: const TextStyle(
+                                      color: AppColors.error,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                        // =========================================
+                        // ATTENDANCE OVERVIEW
+                        // =========================================
+                        const Text(
+                          'Attendance Overview',
+                          style: TextStyle(
+                            fontSize: 21,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.text,
+                          ),
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        AttendanceSummary(
+                          present: presentDays,
+                          absent: absentDays,
+                          late: lateDays,
+                        ),
+
+                        const SizedBox(height: 30),
+
+                        // =========================================
+                        // RECENT ATTENDANCE
+                        // =========================================
+                        const Text(
+                          'Recent Attendance',
+                          style: TextStyle(
+                            fontSize: 21,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.text,
+                          ),
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        if (records.isEmpty)
+                          const _EmptyAttendance()
+                        else
+                          ..._buildRecentAttendance(context, records),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
 
-  
+  // ============================================================
+  // CHECK IF ATTENDANCE IS TODAY
+  // ============================================================
   bool _isToday(Attendance attendance) {
     final now = DateTime.now();
 
@@ -280,7 +332,9 @@ class DashboardPage extends StatelessWidget {
         attendance.date.day == now.day;
   }
 
-
+  // ============================================================
+  // RECENT ATTENDANCE
+  // ============================================================
   List<Widget> _buildRecentAttendance(
     BuildContext context,
     List<Attendance> records,
@@ -291,12 +345,15 @@ class DashboardPage extends StatelessWidget {
 
     final recentRecords = sortedRecords.take(5).toList();
 
-    return recentRecords.map((attendance) {
-      return _RecentAttendanceCard(attendance: attendance);
-    }).toList();
+    return recentRecords
+        .map((attendance) => _RecentAttendanceCard(attendance: attendance))
+        .toList();
   }
 }
 
+// ================================================================
+// RECENT ATTENDANCE CARD
+// ================================================================
 
 class _RecentAttendanceCard extends StatelessWidget {
   final Attendance attendance;
@@ -408,8 +465,13 @@ class _RecentAttendanceCard extends StatelessWidget {
   }
 }
 
+// ================================================================
+// EMPTY ATTENDANCE
+// ================================================================
 
 class _EmptyAttendance extends StatelessWidget {
+  const _EmptyAttendance();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -456,44 +518,6 @@ class _EmptyAttendance extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-
-class _BottomNavigation extends StatelessWidget {
-  final ValueChanged<int> onDestinationSelected;
-
-  const _BottomNavigation({required this.onDestinationSelected});
-
-  @override
-  Widget build(BuildContext context) {
-    return NavigationBar(
-      selectedIndex: 0,
-      onDestinationSelected: onDestinationSelected,
-      backgroundColor: Colors.white,
-      indicatorColor: AppColors.primaryLight,
-      elevation: 0,
-      destinations: const [
-        NavigationDestination(
-          icon: Icon(Icons.home_outlined),
-          selectedIcon: Icon(Icons.home_rounded, color: AppColors.primary),
-          label: 'Home',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.calendar_month_outlined),
-          selectedIcon: Icon(
-            Icons.calendar_month_rounded,
-            color: AppColors.primary,
-          ),
-          label: 'Attendance',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.person_outline_rounded),
-          selectedIcon: Icon(Icons.person_rounded, color: AppColors.primary),
-          label: 'Profile',
-        ),
-      ],
     );
   }
 }
