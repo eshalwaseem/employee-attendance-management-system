@@ -19,7 +19,15 @@ workflows:
 
       - name: Create google-services.json
         script: |
+          if [ -z "$GOOGLE_SERVICES_JSON" ]; then
+            echo "ERROR: GOOGLE_SERVICES_JSON is not set!"
+            exit 1
+          fi
+
           echo "$GOOGLE_SERVICES_JSON" | base64 --decode > android/app/google-services.json
+
+          echo "google-services.json created successfully:"
+          ls -lh android/app/google-services.json
 
       - name: Get dependencies
         script: |
