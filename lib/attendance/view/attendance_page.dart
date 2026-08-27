@@ -13,6 +13,24 @@ import '../bloc/attendance_state.dart';
 import '../widgets/widgets.dart';
 
 enum AttendancePeriod { today, thisWeek, thisMonth }
+String _formatMonth(DateTime date) {
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+
+  return '${months[date.month - 1]} ${date.year}';
+}
 
 class AttendancePage extends StatefulWidget {
   const AttendancePage({super.key});
@@ -24,7 +42,7 @@ class AttendancePage extends StatefulWidget {
 class _AttendancePageState extends State<AttendancePage> {
   int _selectedTab = 0;
   AttendancePeriod _selectedPeriod = AttendancePeriod.today;
-
+DateTime _selectedMonth = DateTime.now();
   final TextEditingController _searchController = TextEditingController();
 
   String _searchQuery = '';
@@ -72,9 +90,7 @@ class _AttendancePageState extends State<AttendancePage> {
 
       case AttendancePeriod.thisWeek:
         final today = DateTime(now.year, now.month, now.day);
-
         final monday = today.subtract(Duration(days: today.weekday - 1));
-
         final sunday = monday.add(const Duration(days: 6));
 
         final checkDate = DateTime(date.year, date.month, date.day);
@@ -82,7 +98,8 @@ class _AttendancePageState extends State<AttendancePage> {
         return !checkDate.isBefore(monday) && !checkDate.isAfter(sunday);
 
       case AttendancePeriod.thisMonth:
-        return date.year == now.year && date.month == now.month;
+        return date.year == _selectedMonth.year &&
+            date.month == _selectedMonth.month;
     }
   }
 
@@ -460,41 +477,86 @@ class _AttendancePageState extends State<AttendancePage> {
   Widget _buildPeriodSelector() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-      child: Container(
-        height: 44,
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: const Color(0xFFEFEFEF),
-          borderRadius: BorderRadius.circular(13),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: _periodButton(
-                title: 'Today',
-                period: AttendancePeriod.today,
+      child: Column(
+        children: [
+          Container(
+            height: 44,
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFEFEF),
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _periodButton(
+                    title: 'Today',
+                    period: AttendancePeriod.today,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: _periodButton(
+                    title: 'This Week',
+                    period: AttendancePeriod.thisWeek,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: _periodButton(
+                    title: 'Monthly',
+                    period: AttendancePeriod.thisMonth,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Show month selector only for Monthly
+          if (_selectedPeriod == AttendancePeriod.thisMonth)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _selectedMonth = DateTime(
+                          _selectedMonth.year,
+                          _selectedMonth.month - 1,
+                        );
+                      });
+                    },
+                    icon: const Icon(Icons.chevron_left_rounded),
+                  ),
+
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        _formatMonth(_selectedMonth),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _selectedMonth = DateTime(
+                          _selectedMonth.year,
+                          _selectedMonth.month + 1,
+                        );
+                      });
+                    },
+                    icon: const Icon(Icons.chevron_right_rounded),
+                  ),
+                ],
               ),
             ),
-
-            const SizedBox(width: 4),
-
-            Expanded(
-              child: _periodButton(
-                title: 'This Week',
-                period: AttendancePeriod.thisWeek,
-              ),
-            ),
-
-            const SizedBox(width: 4),
-
-            Expanded(
-              child: _periodButton(
-                title: 'This Month',
-                period: AttendancePeriod.thisMonth,
-              ),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -654,7 +716,7 @@ class _EmployeeAttendanceViewState extends State<_EmployeeAttendanceView> {
         '${months[date.month - 1]} '
         '${date.year}';
   }
-
+  
   bool _sameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }

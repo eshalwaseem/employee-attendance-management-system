@@ -14,7 +14,9 @@ class AttendanceRepository {
   CollectionReference<Map<String, dynamic>> get _attendanceCollection =>
       _firestore.collection('attendance');
 
-
+  // ============================================================
+  // LOAD ATTENDANCE
+  // ============================================================
 
   Future<List<Attendance>> getAllRecords() async {
     final firebaseUser = _auth.currentUser;
@@ -42,26 +44,36 @@ class AttendanceRepository {
 
     Query<Map<String, dynamic>> query;
 
-
-
     if (role == 'admin') {
+      // Admin can see everything.
       query = _attendanceCollection;
-    }
+    } else if (role == 'manager') {
+      final teamSnapshot = await _attendanceCollection
+          .where('managerId', isEqualTo: firebaseUser.uid)
+          .get();
 
-    else if (role == 'manager') {
-      query = _attendanceCollection.where(
-        'managerId',
-        isEqualTo: firebaseUser.uid,
-      );
-    }
-  
-    else {
+      final ownSnapshot = await _attendanceCollection
+          .where('employeeId', isEqualTo: firebaseUser.uid)
+          .get();
+
+      final seenIds = <String>{};
+      final records = <Attendance>[];
+
+      for (final doc in [...teamSnapshot.docs, ...ownSnapshot.docs]) {
+        if (seenIds.add(doc.id)) {
+          records.add(Attendance.fromFirestore(doc));
+        }
+      }
+
+      records.sort((a, b) => b.date.compareTo(a.date));
+      return records;
+    } else {
+      // Employee sees their own attendance.
       query = _attendanceCollection.where(
         'employeeId',
         isEqualTo: firebaseUser.uid,
       );
     }
-
 
     final snapshot = await query.get();
 
@@ -69,12 +81,14 @@ class AttendanceRepository {
         .map((document) => Attendance.fromFirestore(document))
         .toList();
 
-
     records.sort((a, b) => b.date.compareTo(a.date));
 
     return records;
   }
 
+  // ============================================================
+  // GET EMPLOYEE RECORDS
+  // ============================================================
 
   Future<List<Attendance>> getEmployeeRecords(String employeeId) async {
     final records = await getAllRecords();
@@ -82,7 +96,9 @@ class AttendanceRepository {
     return records.where((record) => record.employeeId == employeeId).toList();
   }
 
-
+  // ============================================================
+  // GET TODAY'S ATTENDANCE
+  // ============================================================
 
   Future<Attendance?> getTodayAttendance(String employeeId) async {
     final records = await getEmployeeRecords(employeeId);
@@ -98,6 +114,9 @@ class AttendanceRepository {
     return null;
   }
 
+  // ============================================================
+  // SAVE ATTENDANCE
+  // ============================================================
 
   Future<void> saveAttendance(Attendance attendance) async {
     final firebaseUser = _auth.currentUser;
@@ -112,15 +131,30 @@ class AttendanceRepository {
 
     await _attendanceCollection
         .doc(attendance.id)
-        .set(attendance.toFirestore());
+        .set(attendance.toFirestore(), SetOptions(merge: true));
+
+    // IMPORTANT:
+    // Verify that Firestore actually contains the document.
+    final savedDocument = await _attendanceCollection.doc(attendance.id).get();
+
+    if (!savedDocument.exists) {
+      throw Exception('Attendance was not saved to Firestore.');
+    }
+
+    print('ATTENDANCE SAVED: ${attendance.id}');
   }
 
- 
+  // ============================================================
+  // DELETE ATTENDANCE
+  // ============================================================
+
   Future<void> deleteAttendance(String attendanceId) async {
     await _attendanceCollection.doc(attendanceId).delete();
   }
 
-
+  // ============================================================
+  // CLEAR ALL
+  // ============================================================
 
   Future<void> clearAll() async {
     final firebaseUser = _auth.currentUser;
@@ -151,6 +185,9 @@ class AttendanceRepository {
     await batch.commit();
   }
 
+  // ============================================================
+  // SAME DAY
+  // ============================================================
 
   bool _isSameDay(DateTime first, DateTime second) {
     return first.year == second.year &&
