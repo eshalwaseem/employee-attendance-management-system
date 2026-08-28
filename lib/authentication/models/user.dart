@@ -186,6 +186,51 @@ class User {
   }
 
   @override
+    @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+
+    return other is User &&
+        other.id == id &&
+        other.name == name &&
+        other.email == email &&
+        other.role == role &&
+        other.managerId == managerId &&
+        other.profileImagePath == profileImagePath &&
+        other.permissions.length == permissions.length &&
+        _permissionsEqual(other.permissions) &&
+        other.createdAt == createdAt;
+  }
+
+  bool _permissionsEqual(List<UserPermission> other) {
+    if (permissions.length != other.length) {
+      return false;
+    }
+
+    for (int i = 0; i < permissions.length; i++) {
+      if (permissions[i] != other[i]) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      id,
+      name,
+      email,
+      role,
+      managerId,
+      profileImagePath,
+      Object.hashAll(permissions),
+      createdAt,
+    );
+  }
   String toString() {
     return 'User('
         'id: $id, '

@@ -39,4 +39,43 @@ class DashboardState {
       lateDays: lateDays ?? this.lateDays,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+
+    return other is DashboardState &&
+        other.status == status &&
+        other.isCheckedIn == isCheckedIn &&
+        other.checkInTime == checkInTime &&
+        other.presentDays == presentDays &&
+        other.absentDays == absentDays &&
+        other.lateDays == lateDays;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      status,
+      isCheckedIn,
+      checkInTime,
+      presentDays,
+      absentDays,
+      lateDays,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'DashboardState('
+        'status: $status, '
+        'isCheckedIn: $isCheckedIn, '
+        'checkInTime: $checkInTime, '
+        'presentDays: $presentDays, '
+        'absentDays: $absentDays, '
+        'lateDays: $lateDays'
+        ')';
+  }
 }

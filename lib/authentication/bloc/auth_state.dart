@@ -8,9 +8,7 @@ class AuthState {
   final String name;
   final String email;
   final String password;
-
   final String? profileImage;
-
   final String? errorMessage;
 
   const AuthState({
@@ -22,7 +20,6 @@ class AuthState {
     this.profileImage,
     this.errorMessage,
   });
-
 
   bool get isNameValid {
     return name.trim().length >= 2;
@@ -41,7 +38,6 @@ class AuthState {
   bool get isPasswordValid {
     return password.length >= 6;
   }
-
 
   bool get isLoading {
     return status == AuthStatus.loading;
@@ -63,7 +59,6 @@ class AuthState {
     return profileImage != null && profileImage!.isNotEmpty;
   }
 
-
   AuthState copyWith({
     AuthStatus? status,
     User? user,
@@ -78,21 +73,45 @@ class AuthState {
   }) {
     return AuthState(
       status: status ?? this.status,
-
       user: clearUser ? null : user ?? this.user,
-
       name: name ?? this.name,
       email: email ?? this.email,
       password: password ?? this.password,
-
       profileImage: clearProfileImage
           ? null
           : profileImage ?? this.profileImage,
-
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
     );
   }
 
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+
+    return other is AuthState &&
+        other.status == status &&
+        other.user == user &&
+        other.name == name &&
+        other.email == email &&
+        other.password == password &&
+        other.profileImage == profileImage &&
+        other.errorMessage == errorMessage;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      status,
+      user,
+      name,
+      email,
+      password,
+      profileImage,
+      errorMessage,
+    );
+  }
 
   @override
   String toString() {
