@@ -18,16 +18,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SignupSubmitted>(_onSignupSubmitted);
 
     on<AuthSessionRequested>(_onAuthSessionRequested);
+
     on<LogoutRequested>(_onLogoutRequested);
+
+    on<ProfileNameUpdated>(_onProfileNameUpdated);
+
+    on<ProfileImageChanged>(_onProfileImageChanged);
+
+    on<ProfileImageRemoved>(_onProfileImageRemoved);
   }
+
 
   bool _isValidEmail(String email) {
     return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email.trim());
   }
 
+
   void _onNameChanged(NameChanged event, Emitter<AuthState> emit) {
     emit(state.copyWith(name: event.name, clearError: true));
   }
+
 
   void _onEmailChanged(EmailChanged event, Emitter<AuthState> emit) {
     final email = event.email.trim();
@@ -56,9 +66,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
   }
 
+
   void _onPasswordChanged(PasswordChanged event, Emitter<AuthState> emit) {
     emit(state.copyWith(password: event.password, clearError: true));
   }
+
 
   Future<void> _onLoginSubmitted(
     LoginSubmitted event,
@@ -69,6 +81,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
 
     final email = state.email.trim();
+
     final password = state.password;
 
     if (!_isValidEmail(email)) {
@@ -104,6 +117,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           user: user,
           name: user.name,
           email: user.email,
+          profileImage: user.profileImagePath,
           clearError: true,
         ),
       );
@@ -119,6 +133,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
+
   Future<void> _onSignupSubmitted(
     SignupSubmitted event,
     Emitter<AuthState> emit,
@@ -128,7 +143,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
 
     final name = event.name.trim();
+
     final email = state.email.trim();
+
     final password = state.password;
 
     if (name.length < 2) {
@@ -181,6 +198,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           user: user,
           name: user.name,
           email: user.email,
+          profileImage: user.profileImagePath,
           clearError: true,
         ),
       );
@@ -195,6 +213,176 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       addError(error, stackTrace);
     }
   }
+
+
+  Future<void> _onProfileNameUpdated(
+    ProfileNameUpdated event,
+    Emitter<AuthState> emit,
+  ) async {
+    if (state.isLoading) {
+      return;
+    }
+
+    final name = event.name.trim();
+
+    if (name.length < 2) {
+      emit(
+        state.copyWith(
+          status: AuthStatus.failure,
+          errorMessage: 'Name must be at least 2 characters.',
+        ),
+      );
+
+      return;
+    }
+
+    if (state.user == null) {
+      emit(
+        state.copyWith(
+          status: AuthStatus.failure,
+          errorMessage: 'No authenticated user found.',
+        ),
+      );
+
+      return;
+    }
+
+    emit(state.copyWith(status: AuthStatus.loading, clearError: true));
+
+    try {
+      final updatedUser = await _repository.updateName(name: name);
+
+      emit(
+        state.copyWith(
+          status: AuthStatus.authenticated,
+          user: updatedUser,
+          name: updatedUser.name,
+          email: updatedUser.email,
+          profileImage: updatedUser.profileImagePath,
+          clearError: true,
+        ),
+      );
+    } catch (error, stackTrace) {
+      emit(
+        state.copyWith(
+          status: AuthStatus.failure,
+          errorMessage: error.toString().replaceFirst('Exception: ', ''),
+        ),
+      );
+
+      addError(error, stackTrace);
+    }
+  }
+
+
+  Future<void> _onProfileImageChanged(
+    ProfileImageChanged event,
+    Emitter<AuthState> emit,
+  ) async {
+    if (state.isLoading) {
+      return;
+    }
+
+    if (event.imageUrl.trim().isEmpty) {
+      emit(
+        state.copyWith(
+          status: AuthStatus.failure,
+          errorMessage: 'Unable to load the selected avatar.',
+        ),
+      );
+
+      return;
+    }
+
+    if (state.user == null) {
+      emit(
+        state.copyWith(
+          status: AuthStatus.failure,
+          errorMessage: 'No authenticated user found.',
+        ),
+      );
+
+      return;
+    }
+
+    emit(state.copyWith(status: AuthStatus.loading, clearError: true));
+
+    try {
+      final updatedUser = await _repository.updateProfileImage(
+        imageUrl: event.imageUrl,
+      );
+
+      emit(
+        state.copyWith(
+          status: AuthStatus.authenticated,
+          user: updatedUser,
+          name: updatedUser.name,
+          email: updatedUser.email,
+          profileImage: updatedUser.profileImagePath,
+          clearError: true,
+        ),
+      );
+    } catch (error, stackTrace) {
+      emit(
+        state.copyWith(
+          status: AuthStatus.failure,
+          errorMessage: error.toString().replaceFirst('Exception: ', ''),
+        ),
+      );
+
+      addError(error, stackTrace);
+    }
+  }
+
+
+  Future<void> _onProfileImageRemoved(
+    ProfileImageRemoved event,
+    Emitter<AuthState> emit,
+  ) async {
+    if (state.isLoading) {
+      return;
+    }
+
+    if (state.user == null) {
+      emit(
+        state.copyWith(
+          status: AuthStatus.failure,
+          errorMessage: 'No authenticated user found.',
+        ),
+      );
+
+      return;
+    }
+
+    emit(state.copyWith(status: AuthStatus.loading, clearError: true));
+
+    try {
+      final updatedUser =
+    await _repository.removeProfileImage();
+
+emit(
+  state.copyWith(
+    status: AuthStatus.authenticated,
+    user: updatedUser,
+    name: updatedUser.name,
+    email: updatedUser.email,
+    clearProfileImage: true,
+    clearError: true,
+  ),
+);
+      
+    } catch (error, stackTrace) {
+      emit(
+        state.copyWith(
+          status: AuthStatus.failure,
+          errorMessage: error.toString().replaceFirst('Exception: ', ''),
+        ),
+      );
+
+      addError(error, stackTrace);
+    }
+  }
+
 
   Future<void> _onAuthSessionRequested(
     AuthSessionRequested event,
@@ -217,6 +405,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           user: user,
           name: user.name,
           email: user.email,
+          profileImage: user.profileImagePath,
         ),
       );
     } catch (error, stackTrace) {
@@ -225,6 +414,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       addError(error, stackTrace);
     }
   }
+
+ 
 
   Future<void> _onLogoutRequested(
     LogoutRequested event,

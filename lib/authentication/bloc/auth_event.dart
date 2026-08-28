@@ -2,6 +2,7 @@ abstract class AuthEvent {
   const AuthEvent();
 }
 
+
 class NameChanged extends AuthEvent {
   final String name;
 
@@ -12,6 +13,40 @@ class NameChanged extends AuthEvent {
     return 'NameChanged(name: $name)';
   }
 }
+
+
+class ProfileNameUpdated extends AuthEvent {
+  final String name;
+
+  const ProfileNameUpdated(this.name);
+
+  @override
+  String toString() {
+    return 'ProfileNameUpdated(name: $name)';
+  }
+}
+
+
+class ProfileImageChanged extends AuthEvent {
+  final String imageUrl;
+
+  const ProfileImageChanged(this.imageUrl);
+
+  @override
+  String toString() {
+    return 'ProfileImageChanged(imageUrl: $imageUrl)';
+  }
+}
+
+class ProfileImageRemoved extends AuthEvent {
+  const ProfileImageRemoved();
+
+  @override
+  String toString() {
+    return 'ProfileImageRemoved()';
+  }
+}
+
 
 class EmailChanged extends AuthEvent {
   final String email;
@@ -36,6 +71,7 @@ class PasswordChanged extends AuthEvent {
   }
 }
 
+
 class LoginSubmitted extends AuthEvent {
   const LoginSubmitted();
 
@@ -57,6 +93,7 @@ class SignupSubmitted extends AuthEvent {
   }
 }
 
+
 class AuthSessionRequested extends AuthEvent {
   const AuthSessionRequested();
 
@@ -65,6 +102,7 @@ class AuthSessionRequested extends AuthEvent {
     return 'AuthSessionRequested()';
   }
 }
+
 
 
 class LogoutRequested extends AuthEvent {

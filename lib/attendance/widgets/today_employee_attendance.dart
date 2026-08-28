@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../models/attendance.dart';
 
 class TodayEmployeeAttendanceTile extends StatelessWidget {
@@ -19,19 +18,34 @@ class TodayEmployeeAttendanceTile extends StatelessWidget {
     final theme = Theme.of(context);
 
     final hasAttendance = attendance != null;
-    final isLate = hasAttendance && attendance!.status == AttendanceStatus.late;
 
-    final statusText = !hasAttendance
-        ? 'Absent'
-        : isLate
-        ? 'Late'
-        : 'Present';
+    final isLate = hasAttendance &&
+        attendance!.status == AttendanceStatus.late;
 
-    final statusColor = !hasAttendance
-        ? theme.colorScheme.error
-        : isLate
-        ? theme.colorScheme.error
-        : theme.colorScheme.tertiary;
+   
+    final now = DateTime.now();
+
+    final checkInEnd = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      17,
+      30,
+    );
+
+    final windowClosed = !now.isBefore(checkInEnd);
+
+    final statusText = hasAttendance
+        ? (isLate ? 'Late' : 'Present')
+        : (windowClosed ? 'Absent' : 'Not Checked In');
+
+    final statusColor = hasAttendance
+        ? (isLate
+            ? theme.colorScheme.error
+            : theme.colorScheme.tertiary)
+        : (windowClosed
+            ? theme.colorScheme.error
+            : theme.colorScheme.onSurfaceVariant);
 
     final checkIn = attendance?.checkIn;
 
@@ -39,38 +53,59 @@ class TodayEmployeeAttendanceTile extends StatelessWidget {
         ? 'Not checked in'
         : 'Checked in at ${TimeOfDay.fromDateTime(checkIn).format(context)}';
 
-    final hasImage = profileImagePath != null && profileImagePath!.isNotEmpty;
+    final hasImage =
+        profileImagePath != null && profileImagePath!.isNotEmpty;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 12,
+      ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE8E8E8)),
+        border: Border.all(color: theme.colorScheme.outline),
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.08),
-            backgroundImage: hasImage ? NetworkImage(profileImagePath!) : null,
-            child: !hasImage
-                ? Icon(
+          Container(
+            height: 48,
+            width: 48,
+            decoration: BoxDecoration(
+              color:
+                  theme.colorScheme.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: hasImage
+                ? Image.network(
+                    profileImagePath!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (
+                      context,
+                      error,
+                      stackTrace,
+                    ) {
+                      return Icon(
+                        Icons.person_rounded,
+                        color: theme.colorScheme.primary,
+                        size: 25,
+                      );
+                    },
+                  )
+                : Icon(
                     Icons.person_rounded,
                     color: theme.colorScheme.primary,
                     size: 25,
-                  )
-                : null,
+                  ),
           ),
 
           const SizedBox(width: 14),
 
-          // Name + time
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   employeeName,
@@ -81,9 +116,7 @@ class TodayEmployeeAttendanceTile extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-
                 const SizedBox(height: 5),
-
                 Text(
                   timeText,
                   maxLines: 1,
@@ -99,9 +132,11 @@ class TodayEmployeeAttendanceTile extends StatelessWidget {
 
           const SizedBox(width: 12),
 
-          // Status
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 5,
+            ),
             decoration: BoxDecoration(
               color: statusColor.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(8),
@@ -120,4 +155,3 @@ class TodayEmployeeAttendanceTile extends StatelessWidget {
     );
   }
 }
- 

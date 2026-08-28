@@ -63,14 +63,14 @@ class _NameFieldState extends State<NameField> {
     final borderColor = widget.hasError
         ? colorScheme.error
         : _focusNode.hasFocus
-            ? colorScheme.primary
-            : Colors.transparent;
+        ? colorScheme.primary
+        : Colors.transparent;
 
     final shadowColor = widget.hasError
         ? colorScheme.error.withValues(alpha: 0.10)
         : _focusNode.hasFocus
-            ? colorScheme.primary.withValues(alpha: 0.12)
-            : Colors.transparent;
+        ? colorScheme.primary.withValues(alpha: 0.12)
+        : Colors.transparent;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
@@ -106,15 +106,15 @@ class _NameFieldState extends State<NameField> {
           onFieldSubmitted: (_) {
             widget.onSubmitted?.call();
           },
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF0F172A),
+            color: colorScheme.onSurface,
           ),
           decoration: InputDecoration(
             filled: false,
             hintText: 'Full name',
-        
+
             prefixIcon: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.only(left: 16),
@@ -125,20 +125,15 @@ class _NameFieldState extends State<NameField> {
                     : colorScheme.onSurfaceVariant,
               ),
             ),
-        
-            prefixIconConstraints: const BoxConstraints(
-              minWidth: 54,
-            ),
-        
+
+            prefixIconConstraints: const BoxConstraints(minWidth: 54),
+
             suffixIcon: AnimatedSwitcher(
               duration: const Duration(milliseconds: 220),
               transitionBuilder: (child, animation) {
                 return ScaleTransition(
                   scale: animation,
-                  child: FadeTransition(
-                    opacity: animation,
-                    child: child,
-                  ),
+                  child: FadeTransition(opacity: animation, child: child),
                 );
               },
               child: widget.isValid
@@ -148,26 +143,22 @@ class _NameFieldState extends State<NameField> {
                       color: colorScheme.tertiary,
                     )
                   : widget.hasError
-                      ? Icon(
-                          Icons.error_outline_rounded,
-                          key: const ValueKey('error'),
-                          color: colorScheme.error,
-                        )
-                      : const SizedBox(
-                          key: ValueKey('empty'),
-                        ),
+                  ? Icon(
+                      Icons.error_outline_rounded,
+                      key: const ValueKey('error'),
+                      color: colorScheme.error,
+                    )
+                  : const SizedBox(key: ValueKey('empty')),
             ),
-        
-            suffixIconConstraints: const BoxConstraints(
-              minWidth: 54,
-            ),
-        
+
+            suffixIconConstraints: const BoxConstraints(minWidth: 54),
+
             border: InputBorder.none,
             enabledBorder: InputBorder.none,
             focusedBorder: InputBorder.none,
             errorBorder: InputBorder.none,
             focusedErrorBorder: InputBorder.none,
-        
+
             errorStyle: TextStyle(
               color: colorScheme.error,
               fontSize: 12,

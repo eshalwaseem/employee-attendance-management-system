@@ -4,12 +4,12 @@ enum AuthStatus { initial, loading, valid, invalid, authenticated, failure }
 
 class AuthState {
   final AuthStatus status;
-
   final User? user;
-
   final String name;
   final String email;
   final String password;
+
+  final String? profileImage;
 
   final String? errorMessage;
 
@@ -19,6 +19,7 @@ class AuthState {
     this.name = '',
     this.email = '',
     this.password = '',
+    this.profileImage,
     this.errorMessage,
   });
 
@@ -42,7 +43,6 @@ class AuthState {
   }
 
 
-
   bool get isLoading {
     return status == AuthStatus.loading;
   }
@@ -59,6 +59,9 @@ class AuthState {
     return status == AuthStatus.authenticated && user != null;
   }
 
+  bool get hasProfileImage {
+    return profileImage != null && profileImage!.isNotEmpty;
+  }
 
 
   AuthState copyWith({
@@ -67,20 +70,28 @@ class AuthState {
     String? name,
     String? email,
     String? password,
+    String? profileImage,
     String? errorMessage,
     bool clearUser = false,
+    bool clearProfileImage = false,
     bool clearError = false,
   }) {
     return AuthState(
       status: status ?? this.status,
+
       user: clearUser ? null : user ?? this.user,
+
       name: name ?? this.name,
       email: email ?? this.email,
       password: password ?? this.password,
+
+      profileImage: clearProfileImage
+          ? null
+          : profileImage ?? this.profileImage,
+
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
     );
   }
-
 
 
   @override
@@ -91,6 +102,7 @@ class AuthState {
         'name: $name, '
         'email: $email, '
         'passwordLength: ${password.length}, '
+        'profileImage: $profileImage, '
         'errorMessage: $errorMessage'
         ')';
   }

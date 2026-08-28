@@ -31,10 +31,7 @@ class _SplashPageState extends State<SplashPage>
       curve: Curves.easeOutBack,
     );
 
-    _fadeAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeIn,
-    );
+    _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
 
     _controller.forward();
 
@@ -42,17 +39,12 @@ class _SplashPageState extends State<SplashPage>
   }
 
   Future<void> _goToLogin() async {
-    await Future.delayed(
-      const Duration(milliseconds: 2200),
-    );
+    await Future.delayed(const Duration(milliseconds: 2200));
 
     if (!mounted) return;
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => const LoginPage(),
-      ),
-    );
+    Navigator.of(context)
+        .pushReplacement(MaterialPageRoute(builder: (_) => const LoginPage()));
   }
 
   @override
@@ -63,35 +55,38 @@ class _SplashPageState extends State<SplashPage>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final logoBg = isDark
+        ? theme.colorScheme.primary.withValues(alpha: 0.08)
+        : AppColors.primaryLight;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Center(
         child: AnimatedBuilder(
           animation: _controller,
           builder: (context, child) {
             return FadeTransition(
               opacity: _fadeAnimation,
-              child: ScaleTransition(
-                scale: _scaleAnimation,
-                child: child,
-              ),
+              child: ScaleTransition(scale: _scaleAnimation, child: child),
             );
           },
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Logo
               Container(
                 height: 95,
                 width: 95,
                 decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
+                  color: logoBg,
                   borderRadius: BorderRadius.circular(28),
                 ),
-                child: const Center(
+                child: Center(
                   child: Icon(
                     Icons.how_to_reg_rounded,
-                    color: AppColors.primary,
+                    color: theme.colorScheme.primary,
                     size: 52,
                   ),
                 ),
@@ -99,24 +94,23 @@ class _SplashPageState extends State<SplashPage>
 
               const SizedBox(height: 24),
 
-              // App name
-              const Text(
+              Text(
                 'Employee Attendance',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.text,
+                  color: theme.colorScheme.onSurface,
                   letterSpacing: -0.5,
                 ),
               ),
 
               const SizedBox(height: 8),
 
-              const Text(
+              Text(
                 'Smart. Simple. Reliable.',
                 style: TextStyle(
                   fontSize: 14,
-                  color: AppColors.secondaryText,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],

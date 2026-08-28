@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../app.dart';
-
 class SwipeCheckButton extends StatefulWidget {
   final VoidCallback? onCheckIn;
   final bool isCheckedIn;
@@ -24,14 +22,7 @@ class _SwipeCheckButtonState extends State<SwipeCheckButton> {
   void didUpdateWidget(covariant SwipeCheckButton oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (widget.isCheckedIn && !oldWidget.isCheckedIn) {
-      setState(() {
-        _dragPosition = 0;
-        _isSubmitting = false;
-      });
-    }
-
-    if (!widget.isCheckedIn && oldWidget.isCheckedIn) {
+    if (widget.isCheckedIn != oldWidget.isCheckedIn) {
       setState(() {
         _dragPosition = 0;
         _isSubmitting = false;
@@ -41,54 +32,72 @@ class _SwipeCheckButtonState extends State<SwipeCheckButton> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.isCheckedIn) {
-      return Container(
-        height: 62,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: AppColors.primaryLight,
-          borderRadius: BorderRadius.circular(20),
+    final theme = Theme.of(context);
+
+if (widget.isCheckedIn) {
+  final bool isDark = theme.brightness == Brightness.dark;
+
+  return Container(
+    height: 62,
+    width: double.infinity,
+    decoration: BoxDecoration(
+      color: theme.colorScheme.primary.withValues(
+        alpha: isDark ? 0.20 : 0.10,
+      ),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(
+        color: theme.colorScheme.primary.withValues(
+          alpha: isDark ? 0.35 : 0.15,
         ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.check_circle_rounded, color: AppColors.primary),
-            SizedBox(width: 8),
-            Text(
-              'Checked In',
-              style: TextStyle(
-                color: AppColors.primary,
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
+      ),
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.check_circle_rounded,
+          color: theme.colorScheme.primary,
         ),
-      );
-    }
+        const SizedBox(width: 8),
+        Text(
+          'Checked In',
+          style: TextStyle(
+            color: theme.colorScheme.primary,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 
     return LayoutBuilder(
       builder: (context, constraints) {
         const double buttonSize = 50;
 
-        final double maxPosition = constraints.maxWidth - buttonSize - 12;
+        final double maxPosition =
+            constraints.maxWidth - buttonSize - 12;
 
         return Container(
           height: 62,
           width: double.infinity,
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(
+              color: theme.colorScheme.outline,
+            ),
           ),
           child: Stack(
             children: [
-              const Center(
+              Center(
                 child: Text(
                   'Swipe to Check In',
                   style: TextStyle(
-                    color: AppColors.secondaryText,
+                    color: theme.colorScheme.onSurfaceVariant,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -115,7 +124,6 @@ class _SwipeCheckButtonState extends State<SwipeCheckButton> {
                             }
                           });
                         },
-
                   onHorizontalDragEnd: _isSubmitting
                       ? null
                       : (_) {
@@ -128,7 +136,6 @@ class _SwipeCheckButtonState extends State<SwipeCheckButton> {
                               _isSubmitting = true;
                             });
 
-                            // THIS triggers AttendanceBloc.
                             widget.onCheckIn?.call();
                           } else {
                             setState(() {
@@ -136,14 +143,13 @@ class _SwipeCheckButtonState extends State<SwipeCheckButton> {
                             });
                           }
                         },
-
                   child: Container(
                     height: buttonSize,
                     width: buttonSize,
                     decoration: BoxDecoration(
                       color: _isSubmitting
-                          ? AppColors.secondaryText
-                          : AppColors.primary,
+                          ? theme.colorScheme.onSurfaceVariant
+                          : theme.colorScheme.primary,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: _isSubmitting

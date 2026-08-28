@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../authentication/models/user.dart';
 
 class Employee {
@@ -9,6 +11,8 @@ class Employee {
   final String? profileImagePath;
   final List<UserPermission> permissions;
 
+  final DateTime createdAt;
+
   const Employee({
     required this.id,
     required this.name,
@@ -17,6 +21,7 @@ class Employee {
     this.managerId,
     this.profileImagePath,
     this.permissions = const [],
+    required this.createdAt,
   });
 
   bool get isAdmin => role == UserRole.admin;
@@ -59,6 +64,7 @@ class Employee {
       managerId: data['managerId'] as String?,
       profileImagePath: data['profileImagePath'] as String?,
       permissions: permissions,
+      createdAt: _parseCreatedAt(data['createdAt']),
     );
   }
 
@@ -71,6 +77,7 @@ class Employee {
       'managerId': managerId,
       'profileImagePath': profileImagePath,
       'permissions': permissions.map((permission) => permission.value).toList(),
+      'createdAt': Timestamp.fromDate(createdAt),
     };
   }
 
@@ -83,6 +90,7 @@ class Employee {
       managerId: user.managerId,
       profileImagePath: user.profileImagePath,
       permissions: user.permissions,
+      createdAt: user.createdAt,
     );
   }
 
@@ -94,6 +102,7 @@ class Employee {
     String? managerId,
     String? profileImagePath,
     List<UserPermission>? permissions,
+    DateTime? createdAt,
     bool clearManagerId = false,
     bool clearProfileImagePath = false,
   }) {
@@ -107,6 +116,7 @@ class Employee {
           ? null
           : profileImagePath ?? this.profileImagePath,
       permissions: permissions ?? this.permissions,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 
@@ -117,7 +127,24 @@ class Employee {
         'name: $name, '
         'email: $email, '
         'role: ${role.value}, '
-        'managerId: $managerId'
+        'managerId: $managerId, '
+        'createdAt: $createdAt'
         ')';
+  }
+
+  static DateTime _parseCreatedAt(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+
+    if (value is DateTime) {
+      return value;
+    }
+
+    if (value is String) {
+      return DateTime.tryParse(value) ?? DateTime(2000);
+    }
+
+    return DateTime(2000);
   }
 }

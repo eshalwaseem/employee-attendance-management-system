@@ -17,10 +17,10 @@ class FirebaseAuthRepository {
     required String password,
   }) async {
     final normalizedEmail = email.trim().toLowerCase();
+
     final normalizedName = name.trim();
 
     try {
-      // Create Firebase Authentication account
       final credential = await _auth.createUserWithEmailAndPassword(
         email: normalizedEmail,
         password: password,
@@ -34,25 +34,26 @@ class FirebaseAuthRepository {
 
       await firebaseUser.updateDisplayName(normalizedName);
 
+      final createdAt = DateTime.now();
 
       final user = User(
         id: firebaseUser.uid,
         name: normalizedName,
         email: normalizedEmail,
-
         role: UserRole.employee,
-
         managerId: managerId,
-
         permissions: const [
           UserPermission.viewOwnAttendance,
           UserPermission.viewTeamAttendance,
         ],
+        createdAt: createdAt,
       );
 
       await _firestore.collection('users').doc(firebaseUser.uid).set({
         ...user.toJson(),
+
         'createdAt': FieldValue.serverTimestamp(),
+
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
@@ -108,9 +109,94 @@ class FirebaseAuthRepository {
   }
 
 
-
   Future<void> logout() async {
     await _auth.signOut();
+  }
+
+
+  Future<User> updateName({required String name}) async {
+    final firebaseUser = _auth.currentUser;
+
+    if (firebaseUser == null) {
+      throw Exception('No authenticated user found.');
+    }
+
+    final normalizedName = name.trim();
+
+    if (normalizedName.length < 2) {
+      throw Exception('Name must be at least 2 characters.');
+    }
+
+    await firebaseUser.updateDisplayName(normalizedName);
+
+    final userReference = _firestore.collection('users').doc(firebaseUser.uid);
+
+    await userReference.update({
+      'name': normalizedName,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    final snapshot = await userReference.get();
+
+    if (snapshot.exists && snapshot.data() != null) {
+      return _userFromFirestore(firebaseUser, snapshot.data()!);
+    }
+
+    throw Exception('Unable to load updated user information.');
+  }
+
+
+  Future<User> updateProfileImage({required String imageUrl}) async {
+    final firebaseUser = _auth.currentUser;
+
+    if (firebaseUser == null) {
+      throw Exception('No authenticated user found.');
+    }
+
+    if (imageUrl.trim().isEmpty) {
+      throw Exception('Profile image URL cannot be empty.');
+    }
+
+    final userReference = _firestore.collection('users').doc(firebaseUser.uid);
+
+    await userReference.set({
+      'profileImagePath': imageUrl.trim(),
+
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    final snapshot = await userReference.get();
+
+    if (snapshot.exists && snapshot.data() != null) {
+      return _userFromFirestore(firebaseUser, snapshot.data()!);
+    }
+
+    throw Exception('Unable to save profile image.');
+  }
+
+
+  Future<User> removeProfileImage() async {
+    final firebaseUser = _auth.currentUser;
+
+    if (firebaseUser == null) {
+      throw Exception('No authenticated user found.');
+    }
+
+    final userReference = _firestore.collection('users').doc(firebaseUser.uid);
+
+    await userReference.set({
+      'profileImagePath': FieldValue.delete(),
+
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    final snapshot = await userReference.get();
+
+    if (snapshot.exists && snapshot.data() != null) {
+      return _userFromFirestore(firebaseUser, snapshot.data()!);
+    }
+
+    throw Exception('Unable to remove profile image.');
   }
 
 
@@ -121,30 +207,31 @@ class FirebaseAuthRepository {
 
     final snapshot = await reference.get();
 
-    // User already exists
+
     if (snapshot.exists && snapshot.data() != null) {
       return _userFromFirestore(firebaseUser, snapshot.data()!);
     }
 
+    final createdAt = DateTime.now();
 
     final user = User(
       id: firebaseUser.uid,
       name: firebaseUser.displayName ?? '',
       email: firebaseUser.email ?? '',
       role: UserRole.employee,
-
-      // Automatically assign the manager
       managerId: managerId,
-
       permissions: const [
         UserPermission.viewOwnAttendance,
         UserPermission.viewTeamAttendance,
       ],
+      createdAt: createdAt,
     );
 
     await reference.set({
       ...user.toJson(),
+
       'createdAt': FieldValue.serverTimestamp(),
+
       'updatedAt': FieldValue.serverTimestamp(),
     });
 
@@ -172,17 +259,48 @@ class FirebaseAuthRepository {
 
     return User(
       id: firebaseUser.uid,
+
       name: data['name'] as String? ?? firebaseUser.displayName ?? '',
+
       email: data['email'] as String? ?? firebaseUser.email ?? '',
+
       role: UserRole.fromString(data['role'] as String?),
 
-      // Read managerId from Firestore
       managerId: data['managerId'] as String?,
 
       profileImagePath: data['profileImagePath'] as String?,
 
       permissions: permissions,
+
+      createdAt: _parseCreatedAt(data['createdAt'], firebaseUser),
     );
+  }
+
+
+  DateTime _parseCreatedAt(dynamic value, firebase_auth.User firebaseUser) {
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+
+    if (value is DateTime) {
+      return value;
+    }
+
+    if (value is String) {
+      final parsed = DateTime.tryParse(value);
+
+      if (parsed != null) {
+        return parsed;
+      }
+    }
+
+    final firebaseCreationTime = firebaseUser.metadata.creationTime;
+
+    if (firebaseCreationTime != null) {
+      return firebaseCreationTime;
+    }
+
+    return DateTime(2000);
   }
 
 

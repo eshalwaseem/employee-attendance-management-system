@@ -108,16 +108,15 @@ class _PasswordFieldState extends State<PasswordField> {
           onFieldSubmitted: (_) {
             widget.onSubmitted?.call();
           },
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF0F172A),
+            color: colorScheme.onSurface,
           ),
           decoration: InputDecoration(
             filled: false,
             hintText: 'Password',
 
-            // 🔒 Password icon
             prefixIcon: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.only(left: 16),
@@ -131,7 +130,6 @@ class _PasswordFieldState extends State<PasswordField> {
 
             prefixIconConstraints: const BoxConstraints(minWidth: 54),
 
-            // 👁 Show / hide password
             suffixIcon: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -158,7 +156,6 @@ class _PasswordFieldState extends State<PasswordField> {
                       : const SizedBox(key: ValueKey('empty')),
                 ),
 
-                // 👁 Eye button
                 IconButton(
                   tooltip: _obscurePassword ? 'Show password' : 'Hide password',
                   onPressed: () {

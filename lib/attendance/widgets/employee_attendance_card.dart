@@ -6,12 +6,14 @@ import 'attendance_list_item.dart';
 class EmployeeAttendanceCard extends StatelessWidget {
   final String employeeName;
   final String? profileImagePath;
+  final DateTime createdAt;
   final List<Attendance> records;
 
   const EmployeeAttendanceCard({
     super.key,
     required this.employeeName,
     required this.records,
+    required this.createdAt,
     this.profileImagePath,
   });
 
@@ -29,9 +31,7 @@ class EmployeeAttendanceCard extends StatelessWidget {
 
   List<Attendance> get sortedRecords {
     final result = [...records];
-
     result.sort((a, b) => b.date.compareTo(a.date));
-
     return result;
   }
 
@@ -42,40 +42,37 @@ class EmployeeAttendanceCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE8E8E8)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.035),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: theme.colorScheme.outline),
+        boxShadow: theme.brightness == Brightness.light
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.035),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : null,
       ),
       child: Theme(
         data: theme.copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
           ),
-
           collapsedShape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
           ),
-
           leading: _buildProfile(theme),
-
           title: Text(
             employeeName,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
           ),
-
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 6),
             child: Row(
@@ -84,34 +81,35 @@ class EmployeeAttendanceCard extends StatelessWidget {
                   label: 'Present',
                   value: presentCount,
                   color: theme.colorScheme.tertiary,
+                  labelColor: theme.colorScheme.onSurfaceVariant,
                 ),
-
                 const SizedBox(width: 12),
-
                 _SummaryItem(
                   label: 'Late',
                   value: lateCount,
                   color: theme.colorScheme.error,
+                  labelColor: theme.colorScheme.onSurfaceVariant,
                 ),
-
                 const SizedBox(width: 12),
-
                 _SummaryItem(
                   label: 'Total',
                   value: records.length,
                   color: theme.colorScheme.primary,
+                  labelColor: theme.colorScheme.onSurfaceVariant,
                 ),
               ],
             ),
           ),
-
           children: [
             if (records.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
                 child: Text(
                   'No attendance recorded.',
-                  style: TextStyle(color: Color(0xFF777777), fontSize: 13),
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontSize: 13,
+                  ),
                 ),
               )
             else
@@ -121,6 +119,7 @@ class EmployeeAttendanceCard extends StatelessWidget {
                   profileImagePath: profileImagePath,
                   attendance: record,
                   showEmployeeName: false,
+                  date: record.date,
                 ),
               ),
           ],
@@ -151,11 +150,13 @@ class _SummaryItem extends StatelessWidget {
   final String label;
   final int value;
   final Color color;
+  final Color labelColor;
 
   const _SummaryItem({
     required this.label,
     required this.value,
     required this.color,
+    required this.labelColor,
   });
 
   @override
@@ -174,8 +175,8 @@ class _SummaryItem extends StatelessWidget {
         const SizedBox(width: 3),
         Text(
           label,
-          style: const TextStyle(
-            color: Color(0xFF777777),
+          style: TextStyle(
+            color: labelColor,
             fontSize: 11,
             fontWeight: FontWeight.w500,
           ),

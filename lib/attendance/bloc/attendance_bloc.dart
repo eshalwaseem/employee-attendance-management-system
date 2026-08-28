@@ -117,9 +117,9 @@ Future<void> _onCheckInRequested(
       final now = DateTime.now();
 
     
-      final checkInStart = DateTime(now.year, now.month, now.day, 8, 30);
+      final checkInStart = DateTime(now.year, now.month, now.day, 9, 00);
 
-      final checkInEnd = DateTime(now.year, now.month, now.day, 17, 0);
+      final checkInEnd = DateTime(now.year, now.month, now.day, 17, 30);
 
   
       if (now.isBefore(checkInStart)) {
@@ -127,7 +127,7 @@ Future<void> _onCheckInRequested(
           state.copyWith(
             status: AttendanceStatusState.failure,
             errorMessage:
-                'Check-in is not available yet. Check-in starts at 8:30 AM.',
+                'Check-in is not available yet. Check-in starts at 9:00 AM.',
           ),
         );
         return;
@@ -139,7 +139,7 @@ Future<void> _onCheckInRequested(
           state.copyWith(
             status: AttendanceStatusState.failure,
             errorMessage:
-                'Check-in is closed. Check-in is only available until 5:00 PM.',
+                'Check-in is closed. Check-in is only available until 5:30 PM.',
           ),
         );
         return;
@@ -201,12 +201,11 @@ Future<void> _onCheckInRequested(
   }
 
   AttendanceStatus _getAttendanceStatus(DateTime checkIn) {
-    final lateTime = DateTime(checkIn.year, checkIn.month, checkIn.day, 9, 15);
+    final lateTime = DateTime(checkIn.year, checkIn.month, checkIn.day, 9, 30);
 
-    if (checkIn.isAfter(lateTime)) {
+    if (!checkIn.isBefore(lateTime)) {
       return AttendanceStatus.late;
     }
-
     return AttendanceStatus.present;
   }
 

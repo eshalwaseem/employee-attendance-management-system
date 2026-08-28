@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../app.dart';
-
 class AttendanceSummary extends StatelessWidget {
   final int present;
   final int absent;
@@ -59,37 +57,42 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: 12,
         vertical: 16,
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: theme.colorScheme.outline,
+        ),
       ),
       child: Column(
         children: [
           Icon(
             icon,
-            color: AppColors.primary,
+            color: theme.colorScheme.primary,
             size: 23,
           ),
           const SizedBox(height: 10),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 23,
               fontWeight: FontWeight.w800,
-              color: AppColors.text,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 3),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: AppColors.secondaryText,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],

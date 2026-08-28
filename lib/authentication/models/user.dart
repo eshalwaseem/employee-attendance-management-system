@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 enum UserRole {
   admin,
   manager,
@@ -7,10 +9,12 @@ enum UserRole {
     switch (value?.toLowerCase()) {
       case 'admin':
         return UserRole.admin;
+
       case 'manager':
       case 'teamlead':
       case 'team_lead':
         return UserRole.manager;
+
       case 'employee':
       default:
         return UserRole.employee;
@@ -21,8 +25,10 @@ enum UserRole {
     switch (this) {
       case UserRole.admin:
         return 'admin';
+
       case UserRole.manager:
         return 'manager';
+
       case UserRole.employee:
         return 'employee';
     }
@@ -41,14 +47,19 @@ enum UserPermission {
     switch (this) {
       case UserPermission.viewOwnAttendance:
         return 'viewOwnAttendance';
+
       case UserPermission.viewTeamAttendance:
         return 'viewTeamAttendance';
+
       case UserPermission.viewAllEmployees:
         return 'viewAllEmployees';
+
       case UserPermission.manageEmployees:
         return 'manageEmployees';
+
       case UserPermission.manageRoles:
         return 'manageRoles';
+
       case UserPermission.manageAttendance:
         return 'manageAttendance';
     }
@@ -74,6 +85,8 @@ class User {
   final String? profileImagePath;
   final List<UserPermission> permissions;
 
+  final DateTime createdAt;
+
   const User({
     required this.id,
     required this.name,
@@ -82,6 +95,7 @@ class User {
     this.managerId,
     this.profileImagePath,
     this.permissions = const [],
+    required this.createdAt,
   });
 
   bool hasPermission(UserPermission permission) {
@@ -95,6 +109,8 @@ class User {
   bool get isAdmin => role == UserRole.admin;
 
   bool get isManager => role == UserRole.manager;
+
+  bool get isEmployee => role == UserRole.employee;
 
   bool get canViewTeam {
     if (isAdmin || isManager) {
@@ -113,12 +129,12 @@ class User {
       'managerId': managerId,
       'profileImagePath': profileImagePath,
       'permissions': permissions.map((permission) => permission.value).toList(),
+      'createdAt': Timestamp.fromDate(createdAt),
     };
   }
 
   factory User.fromJson(Map<String, dynamic> json) {
     final permissionsJson = json['permissions'];
-
     final permissions = <UserPermission>[];
 
     if (permissionsJson is List) {
@@ -139,6 +155,7 @@ class User {
       managerId: json['managerId'] as String?,
       profileImagePath: json['profileImagePath'] as String?,
       permissions: permissions,
+      createdAt: _parseCreatedAt(json['createdAt']),
     );
   }
 
@@ -150,6 +167,7 @@ class User {
     String? managerId,
     String? profileImagePath,
     List<UserPermission>? permissions,
+    DateTime? createdAt,
     bool clearManagerId = false,
     bool clearProfileImagePath = false,
   }) {
@@ -163,6 +181,7 @@ class User {
           ? null
           : profileImagePath ?? this.profileImagePath,
       permissions: permissions ?? this.permissions,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 
@@ -173,7 +192,24 @@ class User {
         'name: $name, '
         'email: $email, '
         'role: ${role.value}, '
-        'managerId: $managerId'
+        'managerId: $managerId, '
+        'createdAt: $createdAt'
         ')';
+  }
+
+  static DateTime _parseCreatedAt(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+
+    if (value is DateTime) {
+      return value;
+    }
+
+    if (value is String) {
+      return DateTime.tryParse(value) ?? DateTime(2000);
+    }
+
+    return DateTime(2000);
   }
 }

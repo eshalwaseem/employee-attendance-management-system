@@ -107,10 +107,10 @@ class _EmailFieldState extends State<EmailField> {
           onFieldSubmitted: (_) {
             widget.onSubmitted?.call();
           },
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF0F172A),
+            color: colorScheme.onSurface,
           ),
           decoration: InputDecoration(
             filled: false,
