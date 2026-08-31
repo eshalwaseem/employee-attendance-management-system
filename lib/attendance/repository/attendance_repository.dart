@@ -141,6 +141,8 @@ class AttendanceRepository {
       throw Exception('You can only check in yourself.');
     }
 
+    final now = DateTime.now(); final checkInEnd = DateTime( now.year, now.month, now.day, 17, 30, ); if (!now.isBefore(checkInEnd)) { throw Exception( 'Check-in time has ended. You cannot check in after 5:30 PM.', ); }
+    
     final userDocument = await _firestore
         .collection('users')
         .doc(employeeId)
