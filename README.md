@@ -16,90 +16,91 @@ A cross-platform **Flutter** application for tracking employee attendance in rea
 
 **EAMS** replaces manual attendance registers with a mobile-first system where employees check in, managers monitor their teams, and admins control the whole organization all synced live through Firebase.
 
-The app runs from a single Flutter codebase to **Android, iOS, Web, Windows, macOS, and Linux**.
+The app runs from a single Flutter codebase to **Android**.
 
 ## 🖼️ Screenshots
+<div align="center">
 
 <table width="100%">
   <tr>
     <td align="center" width="33%">
-      <img width="160" alt="splash light" src="https://github.com/user-attachments/assets/313ff4d2-f7e9-4a5f-b94a-3a0336db99fd" /><br />      <b>Splash Page</b><br/>
+      <img width="240" alt="splash light" src="https://github.com/user-attachments/assets/313ff4d2-f7e9-4a5f-b94a-3a0336db99fd" /><br />      <b>Splash Page</b><br/>
     </td>
     <td align="center" width="33%">
-      <img width="160" alt="login light" src="https://github.com/user-attachments/assets/d8542998-c611-43bb-840d-3e8e2cc05b84" />
+      <img width="240" alt="login light" src="https://github.com/user-attachments/assets/d8542998-c611-43bb-840d-3e8e2cc05b84" />
 <br />
       <b>Login Page</b><br/>
     </td>
     <td align="center" width="33%">
-      <img width="160" alt="signup light" src="https://github.com/user-attachments/assets/76b00c7e-37db-4c32-8805-a52aebb6fb52" /><br />
+      <img width="240" alt="signup light" src="https://github.com/user-attachments/assets/76b00c7e-37db-4c32-8805-a52aebb6fb52" /><br />
       <b>Signup Page</b><br/>
     </td>
   </tr>
   <tr>
     <td align="center" width="33%">
-      <img width="160" alt="dashboard light" src="https://github.com/user-attachments/assets/3a3d2986-5f06-4bdf-953a-2f78630e7944" />
+      <img width="240" alt="dashboard light" src="https://github.com/user-attachments/assets/3a3d2986-5f06-4bdf-953a-2f78630e7944" />
 <br />
       <b>Dashboard</b><br/>
     </td>
     <td align="center" width="33%">
-      <img width="160" alt="attendance light" src="https://github.com/user-attachments/assets/d80bd57a-91fc-4b01-8794-cb25eec7a942" />
+      <img width="240" alt="attendance light" src="https://github.com/user-attachments/assets/d80bd57a-91fc-4b01-8794-cb25eec7a942" />
 <br />
       <b>Attendance Page</b><br/>
     </td>
     <td align="center" width="33%">
-      <img width="160" alt="profile light" src="https://github.com/user-attachments/assets/4f21419d-afaa-46a3-ad3e-2f73b7c6509a" />
+      <img width="240" alt="profile light" src="https://github.com/user-attachments/assets/4f21419d-afaa-46a3-ad3e-2f73b7c6509a" />
 <br />
       <b>Profile Page</b><br/>
     </td>
       </tr>
     <tr>
   <td align="center" width="33%">
-    <img width="160" alt="avatar light" src="https://github.com/user-attachments/assets/caa6a743-1a3e-46a5-b6ee-fd95e07f865f" />
+    <img width="240" alt="avatar light" src="https://github.com/user-attachments/assets/caa6a743-1a3e-46a5-b6ee-fd95e07f865f" />
     <br/>
     <b>Avatar Selection</b><br/>
   </td>
   <td align="center" width="33%">
-    <img width="160" alt="splash dark" src="https://github.com/user-attachments/assets/01abf8e3-194a-45de-997c-48007b28ecc8" />
+    <img width="240" alt="splash dark" src="https://github.com/user-attachments/assets/01abf8e3-194a-45de-997c-48007b28ecc8" />
 <br/>
     <b>Splash Page Dark Mode</b><br/>
   </td>
   <td align="center" width="33%">
-    <img width="160" alt="login dark" src="https://github.com/user-attachments/assets/57de4c18-9f92-418f-80c6-236df40ac163" />
+    <img width="240" alt="login dark" src="https://github.com/user-attachments/assets/57de4c18-9f92-418f-80c6-236df40ac163" />
 <br/>
     <b>Login Page Dark Mode</b><br/>
   </td>
 </tr>
   <tr>
   <td align="center" width="33%">
-    <img width="160" alt="signup dark" src="https://github.com/user-attachments/assets/772c8747-c26e-44e0-a0dd-c3acfcff111f" />
+    <img width="240" alt="signup dark" src="https://github.com/user-attachments/assets/772c8747-c26e-44e0-a0dd-c3acfcff111f" />
 <br/>
     <b>Signup Page Dark Mode</b><br/>
   </td>
   <td align="center" width="33%">
-    <img width="160" alt="dashboard dark" src="https://github.com/user-attachments/assets/226de6ed-88c4-4ea4-8e99-1bbb0406075a" />
+    <img width="240" alt="dashboard dark" src="https://github.com/user-attachments/assets/226de6ed-88c4-4ea4-8e99-1bbb0406075a" />
 <br/>
     <b>Dashboard Page Dark Mode</b><br/>
   </td>
   <td align="center" width="33%">
-    <img width="160" alt="attendance dark" src="https://github.com/user-attachments/assets/223f6964-1870-4011-8df2-06a9737e0ac9" /><br/>
+    <img width="240" alt="attendance dark" src="https://github.com/user-attachments/assets/223f6964-1870-4011-8df2-06a9737e0ac9" /><br/>
     <b>Attendance Page Dark Mode</b><br/>
   </td>
 </tr>
   <tr>
   <td align="center" width="33%">
-    <img width="160" alt="profile dark" src="https://github.com/user-attachments/assets/cbc93d6e-197d-4f13-b2d8-9fb4dab7aac7" />
+    <img width="240" alt="profile dark" src="https://github.com/user-attachments/assets/cbc93d6e-197d-4f13-b2d8-9fb4dab7aac7" />
 <br/>
     <b>Profile Page Dark Mode</b><br/>
   </td>
   <td align="center" width="33%">
-    <img width="160" alt="avatar dark" src="https://github.com/user-attachments/assets/043ccd09-904d-40ff-aa0c-e60f71a5d153" />
+    <img width="240" alt="avatar dark" src="https://github.com/user-attachments/assets/043ccd09-904d-40ff-aa0c-e60f71a5d153" />
 <br/>
     <b>Avatar Dark Mode</b><br/>
   </td>
       <td align="center" width="33%"></td>
 </tr>
 </table>
-
+</div>
 
 ## 🚀 Features
 
