@@ -14,9 +14,6 @@ class AttendanceRepository {
   CollectionReference<Map<String, dynamic>> get _attendanceCollection =>
       _firestore.collection('attendance');
 
-  // ============================================================
-  // LOAD ATTENDANCE
-  // ============================================================
 
   Future<List<Attendance>> getAllRecords() async {
     final firebaseUser = _auth.currentUser;
@@ -44,10 +41,12 @@ class AttendanceRepository {
 
     Query<Map<String, dynamic>> query;
 
+
     if (role == 'admin') {
-      // Admin can see everything.
       query = _attendanceCollection;
-    } else if (role == 'manager') {
+    }
+
+    else if (role == 'manager') {
       final teamSnapshot = await _attendanceCollection
           .where('managerId', isEqualTo: firebaseUser.uid)
           .get();
@@ -66,9 +65,11 @@ class AttendanceRepository {
       }
 
       records.sort((a, b) => b.date.compareTo(a.date));
+
       return records;
-    } else {
-      // Employee sees their own attendance.
+    }
+    
+    else {
       query = _attendanceCollection.where(
         'employeeId',
         isEqualTo: firebaseUser.uid,
@@ -86,19 +87,11 @@ class AttendanceRepository {
     return records;
   }
 
-  // ============================================================
-  // GET EMPLOYEE RECORDS
-  // ============================================================
-
   Future<List<Attendance>> getEmployeeRecords(String employeeId) async {
     final records = await getAllRecords();
 
     return records.where((record) => record.employeeId == employeeId).toList();
   }
-
-  // ============================================================
-  // GET TODAY'S ATTENDANCE
-  // ============================================================
 
   Future<Attendance?> getTodayAttendance(String employeeId) async {
     final records = await getEmployeeRecords(employeeId);
@@ -114,9 +107,135 @@ class AttendanceRepository {
     return null;
   }
 
-  // ============================================================
-  // SAVE ATTENDANCE
-  // ============================================================
+
+  AttendanceStatus? getEffectiveStatus(Attendance? record, DateTime now) {
+    if (record != null) {
+      return record.status;
+    }
+
+    final isWeekend =
+        now.weekday == DateTime.saturday || now.weekday == DateTime.sunday;
+
+    if (isWeekend) {
+      return null;
+    }
+
+    final checkInEnd = DateTime(now.year, now.month, now.day, 17, 30);
+
+    if (!now.isBefore(checkInEnd)) {
+      return AttendanceStatus.absent;
+    }
+
+    return null;
+  }
+
+
+  Future<Attendance> checkIn({required String employeeId}) async {
+    final firebaseUser = _auth.currentUser;
+
+    if (firebaseUser == null) {
+      throw Exception('No user is signed in.');
+    }
+
+    if (firebaseUser.uid != employeeId) {
+      throw Exception('You can only check in yourself.');
+    }
+
+    final userDocument = await _firestore
+        .collection('users')
+        .doc(employeeId)
+        .get();
+
+    if (!userDocument.exists) {
+      throw Exception('User profile not found.');
+    }
+
+    final userData = userDocument.data();
+
+    if (userData == null) {
+      throw Exception('User profile data is empty.');
+    }
+
+    final role = userData['role'] as String? ?? 'employee';
+
+    String? managerId;
+
+    if (role == 'employee') {
+      managerId = userData['managerId'] as String?;
+
+      if (managerId == null || managerId.isEmpty) {
+        throw Exception('Manager is not assigned to this employee.');
+      }
+    }
+
+    final existingRecords = await _attendanceCollection
+        .where('employeeId', isEqualTo: employeeId)
+        .get();
+
+    final today = DateTime.now();
+
+    for (final document in existingRecords.docs) {
+      final existing = Attendance.fromFirestore(document);
+
+      if (_isSameDay(existing.date, today)) {
+        throw Exception('You have already checked in today.');
+      }
+    }
+
+    final attendanceRef = _attendanceCollection.doc();
+
+    await attendanceRef.set({
+      'employeeId': employeeId,
+      'managerId': managerId,
+
+      'date': FieldValue.serverTimestamp(),
+
+      'checkIn': FieldValue.serverTimestamp(),
+      'status': AttendanceStatus.present.name,
+
+      'isSynced': true,
+    });
+
+    final savedDocument = await attendanceRef.get();
+
+    if (!savedDocument.exists) {
+      throw Exception('Attendance was not saved to Firestore.');
+    }
+
+    final savedData = savedDocument.data();
+
+    if (savedData == null) {
+      throw Exception('Attendance data is empty.');
+    }
+
+    final serverCheckIn = savedData['checkIn'];
+
+    if (serverCheckIn is! Timestamp) {
+      throw Exception('Firestore did not return a valid server timestamp.');
+    }
+
+    final serverDate = serverCheckIn.toDate();
+
+    final minutesSinceMidnight = serverDate.hour * 60 + serverDate.minute;
+
+    const lateThreshold = 9 * 60 + 30;
+
+    final AttendanceStatus status = minutesSinceMidnight >= lateThreshold
+        ? AttendanceStatus.late
+        : AttendanceStatus.present;
+
+    await attendanceRef.update({'status': status.name});
+
+    final finalDocument = await attendanceRef.get();
+
+    if (!finalDocument.exists) {
+      throw Exception('Attendance record was not found after saving.');
+    }
+
+    final attendance = Attendance.fromFirestore(finalDocument);
+
+    return attendance;
+  }
 
   Future<void> saveAttendance(Attendance attendance) async {
     final firebaseUser = _auth.currentUser;
@@ -133,8 +252,6 @@ class AttendanceRepository {
         .doc(attendance.id)
         .set(attendance.toFirestore(), SetOptions(merge: true));
 
-    // IMPORTANT:
-    // Verify that Firestore actually contains the document.
     final savedDocument = await _attendanceCollection.doc(attendance.id).get();
 
     if (!savedDocument.exists) {
@@ -144,17 +261,9 @@ class AttendanceRepository {
     print('ATTENDANCE SAVED: ${attendance.id}');
   }
 
-  // ============================================================
-  // DELETE ATTENDANCE
-  // ============================================================
-
   Future<void> deleteAttendance(String attendanceId) async {
     await _attendanceCollection.doc(attendanceId).delete();
   }
-
-  // ============================================================
-  // CLEAR ALL
-  // ============================================================
 
   Future<void> clearAll() async {
     final firebaseUser = _auth.currentUser;
@@ -184,10 +293,6 @@ class AttendanceRepository {
 
     await batch.commit();
   }
-
-  // ============================================================
-  // SAME DAY
-  // ============================================================
 
   bool _isSameDay(DateTime first, DateTime second) {
     return first.year == second.year &&

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../../app.dart';
 
 class CheckInCard extends StatelessWidget {
@@ -48,9 +47,7 @@ class CheckInCard extends StatelessWidget {
           const SizedBox(height: 18),
 
           Text(
-            isCheckedIn
-                ? checkInTime ?? '--:--'
-                : '--:--',
+            isCheckedIn ? checkInTime ?? '--:--' : '--:--',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 34,

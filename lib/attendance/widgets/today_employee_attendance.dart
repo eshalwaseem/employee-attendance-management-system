@@ -33,7 +33,10 @@ class TodayEmployeeAttendanceTile extends StatelessWidget {
       30,
     );
 
-    final windowClosed = !now.isBefore(checkInEnd);
+    final isWeekend =
+        now.weekday == DateTime.saturday || now.weekday == DateTime.sunday;
+
+    final windowClosed = !isWeekend && !now.isBefore(checkInEnd);
 
     final statusText = hasAttendance
         ? (isLate ? 'Late' : 'Present')

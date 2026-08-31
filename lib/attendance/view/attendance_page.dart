@@ -530,6 +530,7 @@ class _AttendancePageState extends State<AttendancePage> {
                     profileImagePath: employee.profileImagePath,
                     createdAt: employee.createdAt,
                     records: employeeRecords,
+                    periodDates:_datesForSelectedPeriod(employee.createdAt)
                   );
                 }),
             ],

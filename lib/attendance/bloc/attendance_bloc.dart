@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/attendance.dart';
+
 import '../repository/attendance_repository.dart';
 import 'attendance_event.dart';
 import 'attendance_state.dart';
@@ -50,10 +49,11 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
     }
   }
 
-Future<void> _onCheckInRequested(
+  Future<void> _onCheckInRequested(
     CheckInRequested event,
     Emitter<AttendanceState> emit,
   ) async {
+
     if (state.isLoading) {
       return;
     }
@@ -67,6 +67,7 @@ Future<void> _onCheckInRequested(
           errorMessage: 'You must be signed in to check in.',
         ),
       );
+
       return;
     }
 
@@ -77,109 +78,26 @@ Future<void> _onCheckInRequested(
           errorMessage: 'You can only check in for yourself.',
         ),
       );
+
       return;
     }
 
+    emit(
+      state.copyWith(status: AttendanceStatusState.loading, clearError: true),
+    );
+
     try {
-   
-      final userDocument = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(firebaseUser.uid)
-          .get();
 
-      if (!userDocument.exists) {
-        emit(
-          state.copyWith(
-            status: AttendanceStatusState.failure,
-            errorMessage: 'User profile not found.',
-          ),
-        );
-        return;
-      }
-
-      final userData = userDocument.data()!;
-
-      final role = userData['role'] as String? ?? 'employee';
-
-      final managerId = userData['managerId'] as String?;
-
-    
-      if (role == 'employee' && (managerId == null || managerId.isEmpty)) {
-        emit(
-          state.copyWith(
-            status: AttendanceStatusState.failure,
-            errorMessage: 'No manager has been assigned to you.',
-          ),
-        );
-        return;
-      }
-
-      final now = DateTime.now();
-
-    
-      final checkInStart = DateTime(now.year, now.month, now.day, 9, 00);
-
-      final checkInEnd = DateTime(now.year, now.month, now.day, 17, 30);
-
-  
-      if (now.isBefore(checkInStart)) {
-        emit(
-          state.copyWith(
-            status: AttendanceStatusState.failure,
-            errorMessage:
-                'Check-in is not available yet. Check-in starts at 9:00 AM.',
-          ),
-        );
-        return;
-      }
-
-    
-      if (!now.isBefore(checkInEnd)) {
-        emit(
-          state.copyWith(
-            status: AttendanceStatusState.failure,
-            errorMessage:
-                'Check-in is closed. Check-in is only available until 5:30 PM.',
-          ),
-        );
-        return;
-      }
-
-  
-      final alreadyCheckedIn = state.records.any(
-        (record) =>
-            record.employeeId == firebaseUser.uid &&
-            _isSameDay(record.date, now),
-      );
-
-      if (alreadyCheckedIn) {
-        emit(
-          state.copyWith(
-            status: AttendanceStatusState.failure,
-            errorMessage: 'You have already checked in today.',
-          ),
-        );
-        return;
-      }
-
-    
-      emit(
-        state.copyWith(status: AttendanceStatusState.loading, clearError: true),
-      );
-
-      final attendance = Attendance(
-        id: 'attendance-${now.millisecondsSinceEpoch}',
+      final attendance = await _repository.checkIn(
         employeeId: firebaseUser.uid,
-        managerId: managerId ?? '',
-        date: now,
-        checkIn: now,
-        status: _getAttendanceStatus(now),
-        isSynced: true,
       );
 
-      await _repository.saveAttendance(attendance);
+      final updatedRecords = [
+        attendance,
+        ...state.records.where((record) => record.id != attendance.id),
+      ];
 
-      final updatedRecords = [attendance, ...state.records];
+      updatedRecords.sort((a, b) => b.date.compareTo(a.date));
 
       emit(
         state.copyWith(
@@ -189,10 +107,15 @@ Future<void> _onCheckInRequested(
         ),
       );
     } catch (error, stackTrace) {
+
+      final message = error.toString().replaceFirst('Exception: ', '');
+
       emit(
         state.copyWith(
           status: AttendanceStatusState.failure,
-          errorMessage: 'Unable to mark attendance.',
+          errorMessage: message.isEmpty
+              ? 'Unable to mark attendance.'
+              : message,
         ),
       );
 
@@ -200,23 +123,6 @@ Future<void> _onCheckInRequested(
     }
   }
 
-  AttendanceStatus _getAttendanceStatus(DateTime checkIn) {
-    final lateTime = DateTime(checkIn.year, checkIn.month, checkIn.day, 9, 30);
-
-    if (!checkIn.isBefore(lateTime)) {
-      return AttendanceStatus.late;
-    }
-    return AttendanceStatus.present;
-  }
-
-
-  bool _isSameDay(DateTime first, DateTime second) {
-    return first.year == second.year &&
-        first.month == second.month &&
-        first.day == second.day;
-  }
-
- 
   void _onEmployeeSelected(
     AttendanceEmployeeSelected event,
     Emitter<AttendanceState> emit,

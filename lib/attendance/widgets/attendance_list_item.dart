@@ -42,7 +42,10 @@ class AttendanceListItem extends StatelessWidget {
     final now = DateTime.now();
     final isToday = _isSameDay(date, now);
     final checkInEnd = DateTime(date.year, date.month, date.day, 17, 30);
-    final windowClosed = isToday ? !now.isBefore(checkInEnd) : true;
+    final isWeekend =
+        date.weekday == DateTime.saturday || date.weekday == DateTime.sunday;
+    final windowClosed =
+        !isWeekend && (isToday ? !now.isBefore(checkInEnd) : true);
 
     final statusText = hasAttendance
         ? (isLate ? 'Late' : 'Present')

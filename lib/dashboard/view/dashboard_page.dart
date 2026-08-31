@@ -30,7 +30,6 @@ class _DashboardPageState extends State<DashboardPage> {
     });
   }
 
-
   String _getGreeting() {
     final hour = DateTime.now().hour;
 
@@ -71,27 +70,16 @@ class _DashboardPageState extends State<DashboardPage> {
 
             final employeeId = user?.id;
 
-
             final profileImage = authState.profileImage;
 
             return BlocBuilder<AttendanceBloc, AttendanceState>(
               builder: (context, attendanceState) {
-
-                if (attendanceState.status == AttendanceStatusState.loading) {
-                  return Center(
-                    child: CircularProgressIndicator(
-                      color: theme.colorScheme.primary,
-                    ),
-                  );
-                }
-
-
+                
                 final records = employeeId == null
                     ? <Attendance>[]
                     : attendanceState.records
                           .where((record) => record.employeeId == employeeId)
                           .toList();
-
 
                 final todayRecords = records.where(_isToday).toList();
 
@@ -103,18 +91,15 @@ class _DashboardPageState extends State<DashboardPage> {
 
                 final checkInTime = todayAttendance?.checkIn;
 
-
                 final presentDays = records
                     .where(
                       (record) => record.status == AttendanceStatus.present,
                     )
                     .length;
 
-
                 final lateDays = records
                     .where((record) => record.status == AttendanceStatus.late)
                     .length;
-
 
                 final now = DateTime.now();
 
@@ -129,7 +114,6 @@ class _DashboardPageState extends State<DashboardPage> {
                 final absentDays = !now.isBefore(checkInEnd) && !isCheckedIn
                     ? 1
                     : 0;
-
 
                 return RefreshIndicator(
                   color: theme.colorScheme.primary,
@@ -155,8 +139,6 @@ class _DashboardPageState extends State<DashboardPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
 
                       children: [
-                        
-
                         Row(
                           children: [
                             Expanded(
@@ -358,7 +340,6 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-
   bool _isToday(Attendance attendance) {
     final now = DateTime.now();
 
@@ -366,7 +347,6 @@ class _DashboardPageState extends State<DashboardPage> {
         attendance.date.month == now.month &&
         attendance.date.day == now.day;
   }
-
 
   List<Widget> _buildRecentAttendance(
     BuildContext context,
@@ -383,7 +363,6 @@ class _DashboardPageState extends State<DashboardPage> {
         .toList();
   }
 }
-
 
 class _RecentAttendanceCard extends StatelessWidget {
   final Attendance attendance;
@@ -432,8 +411,6 @@ class _RecentAttendanceCard extends StatelessWidget {
 
       child: Row(
         children: [
-         
-
           Container(
             height: 44,
             width: 44,
@@ -517,7 +494,6 @@ class _RecentAttendanceCard extends StatelessWidget {
     );
   }
 }
-
 
 class _EmptyAttendance extends StatelessWidget {
   const _EmptyAttendance();

@@ -34,45 +34,43 @@ class _SwipeCheckButtonState extends State<SwipeCheckButton> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-if (widget.isCheckedIn) {
-  final bool isDark = theme.brightness == Brightness.dark;
+    if (widget.isCheckedIn) {
+      final bool isDark = theme.brightness == Brightness.dark;
 
-  return Container(
-    height: 62,
-    width: double.infinity,
-    decoration: BoxDecoration(
-      color: theme.colorScheme.primary.withValues(
-        alpha: isDark ? 0.20 : 0.10,
-      ),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(
-        color: theme.colorScheme.primary.withValues(
-          alpha: isDark ? 0.35 : 0.15,
-        ),
-      ),
-    ),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          Icons.check_circle_rounded,
-          color: theme.colorScheme.primary,
-        ),
-        const SizedBox(width: 8),
-        Text(
-          'Checked In',
-          style: TextStyle(
-            color: theme.colorScheme.primary,
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
+      return Container(
+        height: 62,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primary.withValues(
+            alpha: isDark ? 0.20 : 0.10,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: theme.colorScheme.primary.withValues(
+              alpha: isDark ? 0.35 : 0.15,
+            ),
           ),
         ),
-      ],
-    ),
-  );
-}
-
-
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.check_circle_rounded,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Checked In',
+              style: TextStyle(
+                color: theme.colorScheme.primary,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     return LayoutBuilder(
       builder: (context, constraints) {
         const double buttonSize = 50;
@@ -93,9 +91,12 @@ if (widget.isCheckedIn) {
           ),
           child: Stack(
             children: [
+
               Center(
                 child: Text(
-                  'Swipe to Check In',
+                  _isSubmitting
+                      ? 'Checking in...'
+                      : 'Swipe to Check In',
                   style: TextStyle(
                     color: theme.colorScheme.onSurfaceVariant,
                     fontSize: 14,
@@ -104,8 +105,10 @@ if (widget.isCheckedIn) {
                 ),
               ),
 
+              
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 100),
+                curve: Curves.easeOut,
                 left: _dragPosition,
                 top: 0,
                 child: GestureDetector(
@@ -136,6 +139,7 @@ if (widget.isCheckedIn) {
                               _isSubmitting = true;
                             });
 
+                          
                             widget.onCheckIn?.call();
                           } else {
                             setState(() {
@@ -156,9 +160,11 @@ if (widget.isCheckedIn) {
                         ? const SizedBox(
                             height: 22,
                             width: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             ),
                           )
                         : const Icon(

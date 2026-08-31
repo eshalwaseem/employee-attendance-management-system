@@ -2,18 +2,19 @@ import 'package:flutter/material.dart';
 
 import '../models/attendance.dart';
 import 'attendance_list_item.dart';
-
 class EmployeeAttendanceCard extends StatelessWidget {
   final String employeeName;
   final String? profileImagePath;
   final DateTime createdAt;
   final List<Attendance> records;
+  final List<DateTime> periodDates;
 
   const EmployeeAttendanceCard({
     super.key,
     required this.employeeName,
     required this.records,
     required this.createdAt,
+    required this.periodDates,
     this.profileImagePath,
   });
 
@@ -27,6 +28,28 @@ class EmployeeAttendanceCard extends StatelessWidget {
     return records
         .where((record) => record.status == AttendanceStatus.late)
         .length;
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  int get absentCount {
+    final now = DateTime.now();
+
+    return periodDates.where((day) {
+      final isWeekend =
+          day.weekday == DateTime.saturday || day.weekday == DateTime.sunday;
+      if (isWeekend) return false;
+
+      final isPast =
+          day.isBefore(DateTime(now.year, now.month, now.day)) ||
+          _isSameDay(day, now);
+      if (!isPast) return false;
+
+      final hasRecord = records.any((record) => _isSameDay(record.date, day));
+      return !hasRecord;
+    }).length;
   }
 
   List<Attendance> get sortedRecords {
@@ -91,10 +114,10 @@ class EmployeeAttendanceCard extends StatelessWidget {
                   labelColor: theme.colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 12),
-                _SummaryItem(
-                  label: 'Total',
-                  value: records.length,
-                  color: theme.colorScheme.primary,
+                                _SummaryItem(
+                  label: 'Absent',
+                  value: absentCount,
+                  color: theme.colorScheme.error,
                   labelColor: theme.colorScheme.onSurfaceVariant,
                 ),
               ],
